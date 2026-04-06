@@ -221,18 +221,20 @@ const projects = [
   {
     name: "RCO Metrics Dashboard",
     description:
-      "Internal operations dashboard with fulfillment KPI tracking, shipping leaderboards, order trends, and international order maps. Features TV mode for warehouse display, dark mode, and Firebase Authentication.",
+      "Full-stack operations dashboard pulling live data from Shopify API via Cloudflare Worker backend. 14+ dashboards covering sales, fulfillment, shipping, and international orders across retail and wholesale stores.",
     detailedDescription:
-      "A comprehensive internal operations dashboard built for Rowe Casa Organics that consolidates fulfillment KPIs, shipping performance, order trends, and international order data into a single platform. The dashboard features over 10 views including a fulfillment tracker with 4-day and 7-day fill rate metrics, a shipping leaderboard that ranks warehouse employees by performance across Full-Time, Part-Time, and Wholesale categories, a monthly orders overview with calendar grid view, and an interactive choropleth map for international orders. It includes a TV Mode that auto-rotates between dashboard views on 8-second intervals for wall-mounted warehouse displays, a dark mode toggle with localStorage persistence, and a live order counter that refreshes from Google Sheets every 10 minutes. Firebase Authentication restricts access to @rowecasaorganics.com domain users via Google SSO.",
+      "A full-stack internal operations platform built for Rowe Casa Organics that pulls live data from two Shopify stores (Retail + Wholesale) through a Cloudflare Worker API backend. The Worker handles paginated order fetching, 10-minute response caching, gift card exclusions, cross-day refund adjustments, and timezone-aware date handling (Central Time). Automated cron jobs refresh fulfillment KPIs every 6 hours and run nightly backfills for top products, orders overview, and international geo data. The frontend features 14+ dashboard views including daily metrics with revenue/units/AOV, a sales summary with MTD and YTD totals, fulfillment KPI tracking (4-day and 7-day fill rates), a shipping leaderboard ranking warehouse employees, a monthly orders overview with calendar and chart views, an interactive choropleth map for international orders across 40+ countries, top products rankings, unfulfilled order breakdowns, and a skip-the-line tracker. An admin panel provides role-based access control with Firebase-persisted permission toggles, real-time user presence tracking via Firebase Realtime Database, a shared access log, and a user directory. Additional features include TV Mode with role-filtered playlist auto-rotation for wall-mounted displays, a guided walkthrough tour, URL deep linking, dark mode, and revenue restriction by role. The platform processes data from over 1.3 million historical orders dating back to 2022.",
     tags: [
-      { name: "javascript", color: "blue-text-gradient" },
-      { name: "chart.js", color: "green-text-gradient" },
-      { name: "firebase-auth", color: "pink-text-gradient" },
+      { name: "shopify-api", color: "blue-text-gradient" },
+      { name: "cloudflare-workers", color: "green-text-gradient" },
+      { name: "firebase", color: "pink-text-gradient" },
     ],
     techStack: [
-      "JavaScript", "HTML5", "CSS3", "Chart.js", "jsvectormap",
-      "Firebase Authentication", "Google SSO", "Google Sheets Gviz API",
-      "Web Workers", "localStorage", "CSS Custom Properties", "iframe Architecture",
+      "JavaScript", "HTML5", "CSS3", "Shopify REST API",
+      "Cloudflare Workers", "Cloudflare KV", "Cron Triggers",
+      "Chart.js", "jsvectormap", "Firebase Authentication",
+      "Firebase Realtime Database", "Google SSO", "Role-Based Access Control",
+      "Cursor-Based Pagination", "Response Caching", "Python (Backfill Scripts)",
     ],
     image: starbucks,
     source_code_link: "https://github.com/hhowell116/RCO-Metrics",
