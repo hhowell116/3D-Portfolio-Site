@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <title>RCO IT Software Inventory</title>
+  <link rel="stylesheet" href="../css/styles.css"/>
+  <style>
+    :root { --sb-muted: #6a5e57; }
+    html  { font-size: 18px; letter-spacing: 0.01em; }
+
+    .step { display: none; }
+    .step.active { display: block; }
+
+    .step-header { margin-bottom: 1.75rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--sb-sep); }
+    .step-header h2 { font-size: 1.35rem; font-weight: 800; color: var(--sb-text); margin-bottom: 0.3rem; }
+    .step-header p  { font-size: 0.9rem; color: var(--sb-muted); line-height: 1.6; }
+
+    .howto-steps { display: flex; flex-direction: column; gap: 0.75rem; margin: 1.25rem 0 1.75rem; }
+    .howto-step { display: flex; gap: 1rem; align-items: flex-start; background: var(--sidebar-bg); border: 1.5px solid var(--sb-border); border-radius: 12px; padding: 0.9rem 1.1rem; }
+    .howto-step-num { width: 28px; height: 28px; border-radius: 50%; background: var(--brand-grad); color: #fff; font-size: 0.78rem; font-weight: 800; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+    .howto-step-text strong { display: block; font-size: 0.9rem; color: var(--sb-text); margin-bottom: 0.2rem; }
+    .howto-step-text span   { font-size: 0.82rem; color: var(--sb-muted); line-height: 1.5; }
+
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; max-width: 540px; }
+    @media(max-width:600px){ .info-grid { grid-template-columns: 1fr; } }
+    .field-wrap { display: flex; flex-direction: column; gap: 0.35rem; }
+    .field-wrap label { font-size: 0.86rem; font-weight: 700; color: var(--sb-text); }
+    .field-wrap input, .field-wrap select {
+      background: var(--sidebar-bg); border: 1.5px solid var(--sb-border); border-radius: 9px;
+      padding: 0.6rem 0.85rem; font-size: 0.9rem; font-family: inherit; color: var(--sb-text);
+      outline: none; width: 100%; transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .field-wrap input:focus, .field-wrap select:focus {
+      border-color: var(--brand-hover-border); box-shadow: 0 0 0 3px rgba(189,153,121,0.15);
+    }
+
+    .sw-table-wrap { overflow-x: auto; margin-bottom: 1rem; }
+    .sw-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; table-layout: fixed; }
+    .sw-table thead th {
+      text-align: left; font-size: 0.73rem; font-weight: 800; text-transform: uppercase;
+      letter-spacing: 0.05em; color: var(--sb-muted); padding: 0 0.75rem 0.65rem;
+      border-bottom: 1.5px solid var(--sb-sep);
+    }
+    .sw-table tbody td { padding: 0.55rem 0.75rem; border-bottom: 1px solid var(--sb-sep); vertical-align: middle; }
+    .sw-table tbody tr:hover td { background: var(--sidebar-bg); }
+
+    .sw-name-input {
+      background: transparent; border: none; outline: none;
+      font-size: 0.85rem; font-weight: 700; font-family: inherit;
+      color: var(--sb-text); width: 100%;
+      border-bottom: 1.5px dashed var(--sb-border); padding-bottom: 2px;
+      transition: border-color 0.15s; display: block;
+    }
+    .sw-name-input:focus { border-color: var(--brand-hover-border); }
+    .sw-name-input::placeholder { font-weight: 400; color: var(--sb-muted); }
+
+    .sev-dots { display: flex; gap: 3px; align-items: center; }
+    .sev-dot  { width: 9px; height: 9px; border-radius: 50%; background: var(--sb-sep); }
+    .sev-dot.on { background: var(--brand-brown); }
+
+    .pill-sm  { font-size: 0.72rem; font-weight: 700; padding: 0.18rem 0.5rem; border-radius: 999px; white-space: nowrap; }
+    .pill-yes { background: var(--success-soft); color: var(--success); }
+    .pill-no  { background: rgba(220,80,60,0.08); color: #c0392b; }
+    .pill-na  { background: var(--sidebar-bg); color: var(--sb-muted); border: 1px solid var(--sb-border); }
+
+    .edit-btn {
+      font-size: 0.73rem; font-weight: 700; font-family: inherit; cursor: pointer;
+      padding: 0.28rem 1.1rem; border-radius: 6px; white-space: nowrap;
+      background: var(--brand-soft); border: 1.5px solid var(--brand-hover-border);
+      color: var(--brand-brown); transition: all 0.15s; line-height: 1.4;
+    }
+    .edit-btn:hover, .edit-btn.done:hover { background: var(--brand-grad); color: #fff; border-color: var(--brand-brown); }
+    .edit-btn.done { background: var(--brand-soft); border-color: var(--brand-hover-border); color: var(--brand-brown); }
+
+    .remove-btn {
+      font-size: 0.72rem; font-weight: 700; font-family: inherit; cursor: pointer;
+      padding: 0.25rem 0.5rem; border-radius: 6px; margin-left: 0.6rem;
+      background: none; border: 1.5px solid var(--sb-border); color: var(--sb-muted);
+      transition: all 0.15s; line-height: 1.4;
+    }
+    .remove-btn:hover { border-color: #c0392b; color: #c0392b; }
+
+    .add-sw-btn {
+      width: 100%; padding: 0.8rem; margin-top: 0.25rem;
+      border: 2px dashed var(--sb-border); border-radius: 12px;
+      background: none; color: var(--sb-muted);
+      font-size: 0.9rem; font-weight: 700; font-family: inherit;
+      cursor: pointer; transition: all 0.18s;
+    }
+    .add-sw-btn:hover { border-color: var(--brand-hover-border); color: var(--brand-brown); background: var(--brand-soft); }
+
+    .details-panel { display: none; }
+    .details-panel.active { display: block; }
+    .details-back {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background: none; border: none; color: var(--sb-muted);
+      font-family: inherit; font-size: 0.85rem; font-weight: 700;
+      cursor: pointer; padding: 0; margin-bottom: 1.5rem; transition: color 0.15s;
+    }
+    .details-back:hover { color: var(--brand-brown); }
+    .details-context { background: var(--sidebar-bg); border: 1.5px solid var(--sb-border); border-radius: 12px; padding: 0.9rem 1.25rem; margin-bottom: 1.75rem; }
+    .details-context-name { font-size: 1.1rem; font-weight: 800; color: var(--sb-text); }
+    .details-context-sub  { font-size: 0.8rem; color: var(--sb-muted); margin-top: 0.15rem; }
+
+    .detail-q { margin-bottom: 1.5rem; }
+    .detail-q label  { display: block; font-size: 0.98rem; font-weight: 700; color: var(--sb-text); margin-bottom: 0.2rem; }
+    .detail-q .q-sub { font-size: 0.82rem; color: var(--sb-muted); margin-bottom: 0.65rem; display: block; }
+
+    .pill-group { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+    .pill-btn {
+      padding: 0.42rem 1rem; border-radius: 999px;
+      border: 1.5px solid var(--sb-border); background: var(--panel-bg);
+      color: var(--sb-text); font-size: 0.85rem; font-weight: 600;
+      font-family: inherit; cursor: pointer; transition: all 0.15s;
+    }
+    .pill-btn:hover    { border-color: var(--brand-hover-border); }
+    .pill-btn.selected { background: var(--brand-grad); border-color: var(--brand-brown); color: #fff; }
+
+    .sev-group { display: flex; gap: 0.5rem; align-items: center; }
+    .sev-btn {
+      width: 44px; height: 44px; border-radius: 10px;
+      border: 1.5px solid var(--sb-border); background: var(--panel-bg);
+      font-size: 0.95rem; font-weight: 800; font-family: inherit; color: var(--sb-muted);
+      cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center;
+    }
+    .sev-btn:hover    { border-color: var(--brand-hover-border); color: var(--brand-brown); }
+    .sev-btn.selected { background: var(--brand-grad); border-color: var(--brand-brown); color: #fff; }
+    .sev-labels { display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--sb-muted); margin-top: 0.3rem; max-width: 250px; }
+
+    .detail-input {
+      width: 100%; max-width: 420px; background: var(--sidebar-bg);
+      border: 1.5px solid var(--sb-border); border-radius: 9px; padding: 0.6rem 0.9rem;
+      font-size: 0.9rem; font-family: inherit; color: var(--sb-text); outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .detail-input:focus { border-color: var(--brand-hover-border); box-shadow: 0 0 0 3px rgba(189,153,121,0.15); }
+
+    .detail-textarea {
+      width: 100%; background: var(--sidebar-bg); border: 1.5px solid var(--sb-border);
+      border-radius: 9px; padding: 0.6rem 0.9rem; font-size: 0.9rem; font-family: inherit;
+      color: var(--sb-text); outline: none; resize: vertical;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .detail-textarea:focus { border-color: var(--brand-hover-border); box-shadow: 0 0 0 3px rgba(189,153,121,0.15); }
+    .skip-hint { font-size: 0.74rem; color: var(--sb-muted); font-style: italic; margin-top: 0.3rem; }
+
+    .review-card { background: var(--sidebar-bg); border: 1.5px solid var(--sb-border); border-radius: 14px; padding: 1.25rem 1.5rem; margin-bottom: 1.25rem; }
+    .review-card h3 { font-size: 0.78rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); margin-bottom: 0.75rem; }
+    .review-sw-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.6rem 0.9rem; border-radius: 10px;
+      background: var(--panel-bg); border: 1px solid var(--sb-border);
+      margin-bottom: 0.45rem; font-size: 0.85rem;
+    }
+    .review-sw-item strong { color: var(--sb-text); font-weight: 700; }
+    .review-sw-item span   { color: var(--sb-muted); font-size: 0.78rem; text-align: right; max-width: 55%; }
+
+    /* ── App Examples modal ── */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); backdrop-filter: blur(6px); z-index: 300; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+    .modal-overlay.hidden { display: none; }
+    .modal-box { background: var(--panel-bg); border: 1.5px solid var(--sb-border); border-radius: 20px; padding: 1.75rem; max-width: 640px; width: 100%; max-height: 82vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+    .modal-box h3 { font-size: 1.08rem; font-weight: 800; color: var(--sb-text); margin-bottom: 1.1rem; }
+    .modal-tabs { display: flex; gap: 0.4rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .modal-tab { padding: 0.38rem 0.9rem; border-radius: 999px; font-size: 0.8rem; font-weight: 700; font-family: inherit; border: 1.5px solid var(--sb-border); background: var(--panel-bg); color: var(--sb-muted); cursor: pointer; transition: all 0.15s; }
+    .modal-tab.active { background: var(--brand-grad); border-color: transparent; color: #fff; }
+    .modal-tab-content { display: none; }
+    .modal-tab-content.active { display: block; }
+    .modal-category { margin-bottom: 1.25rem; }
+    .modal-category h4 { font-size: 0.73rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); margin-bottom: 0.5rem; }
+    .modal-apps { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+
+    .modal-app-tag {
+      background: var(--sidebar-bg); border: 1px solid var(--sb-border);
+      border-radius: 8px; padding: 0.3rem 0.7rem;
+      font-size: 0.8rem; color: var(--sb-text); font-weight: 600;
+      cursor: pointer; transition: all 0.15s;
+      display: inline-block; user-select: none;
+    }
+    .modal-app-tag:hover {
+      background: var(--brand-soft); border-color: var(--brand-hover-border);
+      color: var(--brand-brown); transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(95,75,60,0.15);
+    }
+    .modal-app-tag.added {
+      background: var(--success-soft); border-color: var(--success);
+      color: var(--success); cursor: pointer;
+    }
+    .modal-app-tag.added:hover {
+      background: rgba(220,80,60,0.08); border-color: rgba(220,80,60,0.4);
+      color: #c0392b; transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(220,80,60,0.15);
+    }
+
+    .app-examples-wrap { display: inline-flex; align-items: center; gap: 0.4rem; }
+    .info-tip {
+      width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--brand-hover-border);
+      background: var(--brand-soft); color: var(--brand-brown); font-size: 0.7rem; font-weight: 800;
+      display: inline-flex; align-items: center; justify-content: center; cursor: default;
+      position: relative; flex-shrink: 0;
+    }
+    .info-tip:hover .tip-text { display: block; }
+    .tip-text {
+      display: none; position: absolute; bottom: 125%; left: 50%; transform: translateX(-50%);
+      background: var(--sb-text); color: #fff; font-size: 0.74rem; font-weight: 500;
+      padding: 0.4rem 0.7rem; border-radius: 7px; white-space: nowrap; z-index: 10;
+      line-height: 1.4; pointer-events: none;
+    }
+    .tip-text::after { content:''; position:absolute; top:100%; left:50%; transform:translateX(-50%); border:5px solid transparent; border-top-color: var(--sb-text); }
+
+    .owners-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .owners-table th { text-align: left; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: var(--sb-muted); padding: 0 0.75rem 0.6rem; border-bottom: 1.5px solid var(--sb-sep); }
+    .owners-table td { padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--sb-sep); color: var(--sb-text); }
+    .owners-table tr:last-child td { border-bottom: none; }
+    .modal-close { width: 100%; margin-top: 1.25rem; padding: 0.65rem; background: var(--brand-grad); color: #fff; border: none; border-radius: 10px; font-size: 0.9rem; font-weight: 700; font-family: inherit; cursor: pointer; }
+
+    /* ── Floating Help FAB ── */
+    .help-fab {
+      position: fixed; bottom: 1.75rem; right: 1.75rem;
+      width: 50px; height: 50px; border-radius: 50%;
+      background: var(--brand-grad); color: #fff; border: none;
+      font-size: 1.35rem; font-weight: 900; cursor: pointer;
+      box-shadow: 0 4px 18px rgba(95,75,60,0.35); z-index: 200;
+      display: flex; align-items: center; justify-content: center;
+      transition: transform 0.2s, box-shadow 0.2s; font-family: inherit;
+    }
+    .help-fab:hover { transform: scale(1.12); box-shadow: 0 6px 24px rgba(95,75,60,0.45); }
+
+    /* ── Help Modal ── */
+    .help-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); backdrop-filter: blur(6px); z-index: 500; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+    .help-modal-overlay.hidden { display: none; }
+    .help-modal-box {
+      background: var(--panel-bg); border: 1.5px solid var(--sb-border);
+      border-radius: 20px; padding: 2rem;
+      max-width: 660px; width: 100%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.22); max-height: 88vh; overflow-y: auto;
+    }
+    .help-modal-box h3 { font-size: 1.15rem; font-weight: 800; color: var(--sb-text); margin-bottom: 0.35rem; }
+    .help-modal-sub { font-size: 0.85rem; color: var(--sb-muted); margin-bottom: 1.25rem; line-height: 1.6; }
+    .help-step { display: flex; gap: 0.9rem; align-items: flex-start; background: var(--sidebar-bg); border: 1.5px solid var(--sb-border); border-radius: 12px; padding: 0.85rem 1rem; margin-bottom: 0.65rem; }
+    .help-step-num { width: 26px; height: 26px; border-radius: 50%; background: var(--brand-grad); color: #fff; font-size: 0.76rem; font-weight: 800; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+    .help-step-text strong { display: block; font-size: 0.88rem; color: var(--sb-text); margin-bottom: 0.15rem; }
+    .help-step-text span   { font-size: 0.8rem; color: var(--sb-muted); line-height: 1.5; }
+    .help-tip-box { background: var(--brand-soft); border: 1.5px solid var(--brand-hover-border); border-radius: 10px; padding: 0.75rem 1rem; margin-top: 1rem; font-size: 0.82rem; color: var(--brand-brown); line-height: 1.6; font-weight: 600; }
+    .help-modal-close { width: 100%; margin-top: 1.25rem; padding: 0.65rem; background: var(--brand-grad); color: #fff; border: none; border-radius: 10px; font-size: 0.9rem; font-weight: 700; font-family: inherit; cursor: pointer; }
+
+    /* ── Inline validation error ── */
+    .step-err { display: none; margin-top: 0.85rem; background: rgba(220,80,60,0.09); color: #c0392b; border: 1px solid rgba(220,80,60,0.25); border-radius: 9px; padding: 0.65rem 1rem; font-size: 0.85rem; font-weight: 600; }
+    .step-err.show { display: block; }
+
+    /* ── Sidebar email button ── */
+    .portal-email-btn {
+      display: block; width: 100%; background: none;
+      border: 1px solid var(--sb-border); border-radius: 8px;
+      padding: 0.4rem 0.6rem; font-size: 0.67rem; color: var(--sb-muted);
+      font-family: inherit; font-weight: 600; cursor: pointer;
+      text-align: center; transition: all 0.18s; margin-top: 4px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .portal-email-btn:hover { background: var(--brand-soft); border-color: var(--brand-hover-border); color: var(--brand-brown); }
+
+    /* ── Sidebar sheet link ── */
+    .sidebar-sheet-link {
+      display: none; width: 100%; text-align: center;
+      font-size: 0.72rem; font-weight: 700; color: var(--brand-brown);
+      text-decoration: none; background: var(--brand-soft);
+      border: 1.5px solid var(--brand-hover-border);
+      padding: 0.45rem 0.6rem; border-radius: 9px;
+      transition: all 0.15s; margin-bottom: 0.6rem;
+    }
+    .sidebar-sheet-link:hover {
+      background: var(--brand-grad); color: #fff; border-color: var(--brand-brown);
+    }
+    .sidebar-sheet-link.visible { display: block; }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+
+  <aside class="sidebar">
+    <div class="sidebar-logo-wrap">
+      <img src="../assets/logo.png" alt="Rowe Casa Organics" class="sidebar-logo"/>
+    </div>
+    <div class="sidebar-divider"></div>
+    <nav class="sidebar-nav">
+      <button class="nav-btn step-nav-btn active" onclick="goTo(0)"><span class="step-num">1</span> Overview</button>
+      <button class="nav-btn step-nav-btn"         onclick="goTo(1)"><span class="step-num">2</span> Your Info</button>
+      <button class="nav-btn step-nav-btn"         onclick="goTo(2)"><span class="step-num">3</span> Software Details</button>
+      <button class="nav-btn step-nav-btn"         onclick="goTo(3)"><span class="step-num">4</span> Review &amp; Submit</button>
+    </nav>
+    <div class="sidebar-footer">
+      <a id="sidebarSheetLink"
+         class="sidebar-sheet-link"
+         href="https://docs.google.com/spreadsheets/d/1qGufmR0KvRCU8OhQiZgf1R9CnvEvBBHogAcUh6XbOeM/edit?gid=72884401#gid=72884401"
+         target="_blank">
+        View All Software →
+      </a>
+      <div class="sidebar-divider" style="margin-bottom:0.75rem"></div>
+      <button class="contact-btn" onclick="window.location.href='../index.html'">← Back to Portal</button>
+      <button class="portal-email-btn"
+              title="Email itsupport@rowecasaorganics.com"
+              onclick="window.open('https://mail.google.com/mail/?view=cm&fs=1&to=itsupport%40rowecasaorganics.com','_blank')">
+        ✉️ itsupport@rowecasaorganics.com
+      </button>
+    </div>
+  </aside>
+
+  <div class="main-wrap">
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="topbar-title">RCO IT Software Inventory</div>
+        <div class="topbar-desc">Help us build a complete inventory of every app and tool your team uses.</div>
+      </div>
+      <div class="topbar-right">
+        <div class="survey-progress-wrap">
+          <div class="survey-progress-label">Step <span id="progressCurrent">1</span> of 4</div>
+          <div class="survey-progress-bar"><div class="survey-progress-fill" id="progressFill" style="width:25%"></div></div>
+        </div>
+      </div>
+    </header>
+
+    <main class="content-panel">
+
+      <!-- ── STEP 1: Overview ── -->
+      <div class="step active" id="step-0">
+        <div class="step-header">
+          <h2>RCO IT Software Inventory</h2>
+          <p>Help us build a complete list of all software and apps used at Rowe Casa Organics.</p>
+        </div>
+        <p style="font-size:0.93rem;color:var(--sb-text);line-height:1.8;margin-bottom:1.5rem">
+          We need your help to create a complete list of all software and apps used at Rowe Casa Organics.
+          This allows IT to manage costs, improve security, and ensure everyone has the right tools.<br/><br/>
+          Please list the work-related tools you use — websites, desktop programs, and mobile apps.
+          Your input helps us build an accurate company-wide inventory.
+        </p>
+
+        <div class="howto-steps">
+          <div class="howto-step">
+            <div class="howto-step-num">1</div>
+            <div class="howto-step-text">
+              <strong>Your Info</strong>
+              <span>Just your name, email, and department — takes 30 seconds.</span>
+            </div>
+          </div>
+          <div class="howto-step">
+            <div class="howto-step-num">2</div>
+            <div class="howto-step-text">
+              <strong>Software Details</strong>
+              <span>Add each app or program your team uses. Click <strong>Edit Details</strong> on any row to answer a few quick questions about that tool — who owns it, how critical it is, admin access, and more.</span>
+            </div>
+          </div>
+          <div class="howto-step">
+            <div class="howto-step-num">3</div>
+            <div class="howto-step-text">
+              <strong>Review &amp; Submit</strong>
+              <span>Check your entries and submit. That's it. Feel free to resubmit anytime if you forgot to add something — each submission is saved separately.</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+          <button class="card-action" onclick="goTo(1)">Get Started →</button>
+          <button class="clear-btn" onclick="openHelpModal()" style="display:inline-flex;align-items:center;gap:0.4rem">
+            ❓ Need Help?
+          </button>
+        </div>
+      </div>
+
+      <!-- ── STEP 2: Your Info ── -->
+      <div class="step" id="step-1">
+        <div class="step-header">
+          <h2>Your Info</h2>
+          <p style="font-size:0.8rem;color:var(--sb-muted);font-style:italic">Please review the Overview tab for details on this survey.</p>
+        </div>
+        <div class="info-grid">
+          <div class="field-wrap">
+            <label>Full Name</label>
+            <input type="text" id="info_name" placeholder="Your full name"/>
+          </div>
+          <div class="field-wrap">
+            <label>Work Email</label>
+            <input type="email" id="info_email" placeholder="you@rowecasaorganics.com"/>
+          </div>
+          <div class="field-wrap" style="grid-column:1/-1">
+            <label>Department</label>
+            <select id="info_dept" style="max-width:260px">
+              <option value="">— Select your department —</option>
+              <option>Administration</option><option>Brand Experience</option>
+              <option>Curing</option><option>Customer Care</option>
+              <option>Customer Service</option><option>Facilities and Maintenance</option>
+              <option>Finance</option><option>Human Resources</option>
+              <option>Information Technology</option><option>Inventory</option>
+              <option>Kitchen</option><option>Labeling</option>
+              <option>Marketing</option><option>Operations</option>
+              <option>Procurement</option><option>Production</option>
+              <option>Project Management</option><option>Quality Control</option>
+              <option>Research &amp; Development</option><option>Shipping</option>
+              <option>Social Media</option><option>Strategy</option>
+              <option>Wholesale</option>
+            </select>
+          </div>
+        </div>
+        <div id="step1Err" class="step-err">⚠️ Please fill in your name, email, and department before continuing.</div>
+        <div style="margin-top:1.5rem">
+          <button class="card-action" onclick="goToStep2()">Next: Software Details →</button>
+        </div>
+      </div>
+
+      <!-- ── STEP 3: Software Details ── -->
+      <div class="step" id="step-2">
+        <div id="sw-summary-view">
+          <div class="step-header">
+            <h2>Software Details</h2>
+            <p style="font-size:0.8rem;color:var(--sb-muted);font-style:italic">Please review the Overview tab for details on this survey.</p>
+          </div>
+          <div class="app-examples-wrap" style="margin-bottom:1.25rem">
+            <button class="clear-btn" style="font-size:0.8rem" onclick="openModal('apps')">App Examples</button>
+            <div class="info-tip">?<span class="tip-text">Click any app to add it — click again to remove it</span></div>
+          </div>
+          <div class="sw-table-wrap">
+            <table class="sw-table">
+              <thead id="swThead">
+                <tr>
+                  <th style="width:26%">App / Software Name</th>
+                  <th style="width:14%">Who Uses It</th>
+                  <th style="width:13%">Criticality</th>
+                  <th style="width:11%">Admin?</th>
+                  <th style="width:13%">Owner</th>
+                  <th style="width:23%"></th>
+                </tr>
+              </thead>
+              <tbody id="swTableBody"></tbody>
+            </table>
+          </div>
+          <button class="add-sw-btn" onclick="addSoftware()">+ Add an app or software</button>
+          <div style="margin-top:1.75rem;padding-top:1.25rem;border-top:1px solid var(--sb-sep)">
+            <button class="card-action" onclick="goTo(3)">Review &amp; Submit →</button>
+          </div>
+        </div>
+
+        <!-- Details panel -->
+        <div id="sw-details-view" class="details-panel">
+          <button class="details-back" onclick="closeDetails()">← Back to Software List</button>
+          <div class="details-context">
+            <div class="details-context-name" id="details-app-name">—</div>
+            <div class="details-context-sub">Fill in what you know — skip anything you're unsure about</div>
+          </div>
+
+          <div class="detail-q">
+            <label>Who uses this tool?</label>
+            <span class="q-sub">Select the option that best describes usage.</span>
+            <div class="pill-group" id="d-who-pills">
+              <button type="button" class="pill-btn" onclick="setPill('d_who',this,'Just me')">Just me</button>
+              <button type="button" class="pill-btn" onclick="setPill('d_who',this,'My team')">My team</button>
+              <button type="button" class="pill-btn" onclick="setPill('d_who',this,'Department-wide')">Department-wide</button>
+            </div>
+            <input type="hidden" id="d_who"/>
+          </div>
+
+          <div class="detail-q">
+            <label>How critical is this tool for you?</label>
+            <span class="q-sub">1 = Nice to have &nbsp;·&nbsp; 5 = Critical</span>
+            <div class="sev-group">
+              <button type="button" class="sev-btn" onclick="setSev(1)">1</button>
+              <button type="button" class="sev-btn" onclick="setSev(2)">2</button>
+              <button type="button" class="sev-btn" onclick="setSev(3)">3</button>
+              <button type="button" class="sev-btn" onclick="setSev(4)">4</button>
+              <button type="button" class="sev-btn" onclick="setSev(5)">5</button>
+              <input type="hidden" id="d_severity"/>
+            </div>
+            <div class="sev-labels"><span>Nice to have</span><span>Critical</span></div>
+          </div>
+
+          <div class="detail-q">
+            <label>Do you have admin access?</label>
+            <span class="q-sub">This means you can add or remove users or change account settings.</span>
+            <div class="pill-group" id="d-admin-pills">
+              <button type="button" class="pill-btn" onclick="setPill('d_admin',this,'Yes')">Yes</button>
+              <button type="button" class="pill-btn" onclick="setPill('d_admin',this,'No')">No</button>
+              <button type="button" class="pill-btn" onclick="setPill('d_admin',this,'Not sure')">Not sure</button>
+            </div>
+            <input type="hidden" id="d_admin"/>
+          </div>
+
+          <div class="detail-q">
+            <label>Who is responsible for adding new accounts or licenses?</label>
+            <span class="q-sub">The person who manages access, billing, or new user provisioning for this tool.</span>
+            <input type="text" class="detail-input" id="d_owner" placeholder="e.g. Philip Williams"/>
+            <div style="margin-top:0.5rem">
+              <button type="button" class="clear-btn" style="font-size:0.75rem;background:var(--brand-grad);color:#fff;border-color:var(--brand-brown)" onclick="openModal('owners')">App Owner Examples</button>
+            </div>
+            <p class="skip-hint" style="margin-top:0.4rem">Skip if you don't know</p>
+          </div>
+
+          <div class="detail-q">
+            <label>Any notes?</label>
+            <span class="q-sub">e.g. trial version, shared login, only used occasionally, pending cancellation</span>
+            <textarea class="detail-textarea" id="d_notes" rows="3" placeholder="Optional notes..."></textarea>
+          </div>
+
+          <button class="card-action" onclick="saveDetails()">Save &amp; Return to List ✓</button>
+        </div>
+      </div>
+
+      <!-- ── STEP 4: Review & Submit ── -->
+      <div class="step" id="step-3">
+        <div class="step-header">
+          <h2>Review &amp; Submit</h2>
+          <p>Check your details below, then hit submit.</p>
+        </div>
+        <div class="review-card">
+          <h3>Your Info</h3>
+          <div id="reviewSummary"></div>
+        </div>
+        <div class="review-card">
+          <h3>Software Entries <span id="reviewCount" style="font-weight:400;text-transform:none;letter-spacing:0;font-size:0.82rem"></span></h3>
+          <div id="reviewSwList"></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin-top:0.5rem">
+          <button class="card-action" id="submitBtn" onclick="submitSurvey()">Submit Survey →</button>
+          <div id="submitStatus" class="contact-status"></div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ── App Examples Modal ── -->
+<div class="modal-overlay hidden" id="examplesModal">
+  <div class="modal-box">
+    <h3>Reference</h3>
+    <div class="modal-tabs">
+      <button class="modal-tab active" onclick="switchTab('apps')">App Examples</button>
+      <button class="modal-tab"        onclick="switchTab('owners')">App Owner Examples</button>
+    </div>
+    <div class="modal-tab-content active" id="tab-apps"></div>
+    <div class="modal-tab-content"        id="tab-owners"></div>
+    <button class="modal-close" onclick="closeModal()">Got it</button>
+  </div>
+</div>
+
+<!-- ── Help Modal ── -->
+<div class="help-modal-overlay hidden" id="helpModal">
+  <div class="help-modal-box">
+    <h3>How to Complete This Survey</h3>
+    <p class="help-modal-sub">This survey helps IT build a complete inventory of every tool and app used across Rowe Casa Organics. Here's how it works:</p>
+    <div class="help-step">
+      <div class="help-step-num">1</div>
+      <div class="help-step-text">
+        <strong>Your Info</strong>
+        <span>Enter your name, work email, and department. These fields may already be filled in for you.</span>
+      </div>
+    </div>
+    <div class="help-step">
+      <div class="help-step-num">2</div>
+      <div class="help-step-text">
+        <strong>Add Your Apps</strong>
+        <span>On the Software Details step, click <strong>+ Add an app or software</strong> and type the name. Use <strong>App Examples</strong> to browse and click common tools to add them instantly — click again to remove.</span>
+      </div>
+    </div>
+    <div class="help-step">
+      <div class="help-step-num">3</div>
+      <div class="help-step-text">
+        <strong>Edit Details</strong>
+        <span>Click <strong>Edit Details</strong> on any row to answer a few quick questions: who uses it, how critical it is, whether you have admin access, and who manages it. Skip anything you're unsure about.</span>
+      </div>
+    </div>
+    <div class="help-step">
+      <div class="help-step-num">4</div>
+      <div class="help-step-text">
+        <strong>Review &amp; Submit</strong>
+        <span>Look over your entries on the final step, then click <strong>Submit Survey</strong>. Feel free to resubmit anytime if you need to add or change something.</span>
+      </div>
+    </div>
+    <div class="help-tip-box">
+      💡 <strong>Tip:</strong> You only need to list work-related tools — websites, desktop apps, and mobile apps you use to do your job. If you're not sure whether to include something, go ahead and add it.
+    </div>
+    <button class="help-modal-close" onclick="closeHelpModal()">Got it, let's go →</button>
+  </div>
+</div>
+
+<!-- Floating Help FAB -->
+<button class="help-fab" onclick="openHelpModal()" title="Help">?</button>
+
+<!-- ── Firebase Auth + Firestore ── -->
+<script type="module">
+  import { initializeApp, getApps, getApp }                    from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+  import { getAuth, onAuthStateChanged, signOut }              from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+  import { getFirestore, collection, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+  import { getRole }                                           from '../js/roles.js';
+
+  var cfg = {
+    apiKey:"AIzaSyD-mpyReAsJW3dUiWQhFlFeIvUYj_Iju-E",
+    authDomain:"it-help-site.firebaseapp.com",
+    databaseURL:"https://it-help-site-default-rtdb.firebaseio.com",
+    projectId:"it-help-site",
+    storageBucket:"it-help-site.firebasestorage.app",
+    messagingSenderId:"742349139773",
+    appId:"1:742349139773:web:3780ad352a9a7e00f55f54"
+  };
+  var fbApp = getApps().length ? getApp() : initializeApp(cfg);
+  var auth  = getAuth(fbApp);
+  var db    = getFirestore(fbApp);
+
+  onAuthStateChanged(auth, function(user) {
+    if (!user || !user.email.endsWith('@rowecasaorganics.com')) {
+      signOut(auth).finally(function() { window.location.replace('../login.html'); });
+      return;
+    }
+    window._currentUser = user;
+
+    // Pre-fill name / email fields
+    var nameEl  = document.getElementById('info_name');
+    var emailEl = document.getElementById('info_email');
+    if (emailEl && !emailEl.value) emailEl.value = user.email;
+    if (nameEl  && !nameEl.value  && user.displayName) nameEl.value = user.displayName;
+
+    // Show the Google Sheets link in sidebar for IT admins only
+    var role = getRole(user.email);
+    if (role === 'it_admin') {
+      var linkEl = document.getElementById('sidebarSheetLink');
+      if (linkEl) linkEl.classList.add('visible');
+    }
+  });
+
+  window.saveSubmission = async function(data) {
+    if (!window._currentUser) {
+      await new Promise(function(resolve) {
+        var u = onAuthStateChanged(auth, function(usr) { if(usr){window._currentUser=usr;u();resolve();} });
+        setTimeout(resolve, 5000);
+      });
+    }
+    if (!window._currentUser) return false;
+    try {
+      await addDoc(collection(db,'submissions'), Object.assign({}, data, {
+        uid: window._currentUser.uid,
+        userEmail: window._currentUser.email,
+        submittedAt: serverTimestamp()
+      }));
+      return true;
+    } catch(e) { console.error(e); return false; }
+  };
+</script>
+
+<script>
+var SHEET_ENDPOINT = 'https://script.google.com/macros/s/AKfycbxeP-Asvk9kgGx_oz4jMWYOBldaPLM8Tm6S2XfXOfDRat-3KX1UfVXYzEju2Dc7nDwBGg/exec';
+
+var APP_EXAMPLES = {
+  'Communication & Calling':   ['Gmail','Slack','Zoom','RingCentral','Dialpad','Google Meet','Loom','Microsoft Teams','Outlook'],
+  'Project Management':        ['Asana','Trello','Notion','TickTick','Smartsheet','ClickUp'],
+  'Design & Creative':         ['Adobe','Canva','CapCut','Superside','Pantone Connect','BeFunky Photo Editor','SmartDraw','SlidesAI.io'],
+  'E-commerce & Fulfillment':  ['Shopify','Shop (Shopify)','Shopify Partners','ShipStation','Katana','Okendo','Dynamatic','Replo','Better Reports','Lifetimely'],
+  'Marketing & Social':        ['Klaviyo','Sprout Social','Semrush','Manychat','Facebook','Instagram','TikTok for Business','Pinterest','YouTube','Buffer'],
+  'Wholesale & Retail':        ['Faire','RangeMe'],
+  'Finance & Procurement':     ['Global Industrial','Expedia Group','vevor'],
+  'HR & Recruiting':           ['BambooHR','Glassdoor','iHire','ZipRecruiter','Virtualstaff','Upwork Calendar Service','Shift Scheduler'],
+  'Analytics & Reporting':     ['Power BI Desktop','Looker Studio','Geckoboard','Databox','ChartExpo','Better Reports','Lifetimely'],
+  'AI & Automation':           ['ChatGPT / OpenAI','Claude','Zapier','Zapier Bot','Julius AI','KLINGAI','Otter.ai','Read AI','QuillBot'],
+  'IT, Dev & Security':        ['GitHub','Cloudflare Dashboard','Fly.io','GoDaddy','Postman','manage.auth0.com','Synology Account','Pixel Labs / Helium 10'],
+  'Documents, Forms & Labels': ['DocHub','Jotform','Grammarly','Lumin PDF','Scribe','Avery Design & Print Online','Foxy Labels','Labelmaker','Simplebooklet','WiseStamp'],
+  'Meetings & Events':         ['Calendly','Livestorm','Pixieset','Otter.ai','Read AI'],
+  'Other':                     ['Alignable','Amazon','MemberSpace','Dropbox','Accessibility Tracker','AI KPI Tracker','Chatbot App','Schedule Email Reports']
+};
+
+var KNOWN_OWNERS = [
+  { name:'Philip Williams', apps:'Shopify, Shopify Partners, Gorgias, ShipStation, Katana, Cloudflare Dashboard, Google Workspace' },
+  { name:'Chris Paulene',   apps:'BambooHR' },
+  { name:'Grant / Heidi',   apps:'Asana' },
+  { name:'Kaylee Pope',     apps:'Canva' }
+];
+
+var softwareList = [];
+var editingIdx   = null;
+
+/* ── Navigation ── */
+function goTo(n) {
+  if (n === 3) buildReview();
+  document.querySelectorAll('.step').forEach(function(s,i)         { s.classList.toggle('active', i===n); });
+  document.querySelectorAll('.step-nav-btn').forEach(function(b,i) { b.classList.toggle('active', i===n); });
+  document.getElementById('progressCurrent').textContent = n + 1;
+  document.getElementById('progressFill').style.width = ((n+1)/4*100) + '%';
+  window.scrollTo(0,0);
+}
+
+/* ── Step 2 validation ── */
+function goToStep2() {
+  var name  = document.getElementById('info_name').value.trim();
+  var email = document.getElementById('info_email').value.trim();
+  var dept  = document.getElementById('info_dept').value;
+  var errEl = document.getElementById('step1Err');
+  if (!name || !email || !dept) {
+    errEl.classList.add('show');
+    errEl.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    return;
+  }
+  errEl.classList.remove('show');
+  goTo(2);
+}
+
+/* ── Software list ── */
+function addSoftware() {
+  softwareList.push({ name:'', severity:'', admin:'', owner:'', who:'', notes:'', detailsFilled:false });
+  renderTable();
+  setTimeout(function() {
+    var inputs = document.querySelectorAll('.sw-name-input');
+    if (inputs.length) inputs[inputs.length-1].focus();
+  }, 50);
+}
+
+function removeSoftware(idx) {
+  softwareList.splice(idx,1);
+  renderTable();
+}
+
+function renderTable() {
+  var thead = document.getElementById('swThead');
+  var tbody = document.getElementById('swTableBody');
+  if (!softwareList.length) {
+    thead.style.display = 'none';
+    tbody.innerHTML = '<tr><td style="text-align:center;color:var(--sb-muted);padding:2rem;font-size:0.87rem">No apps added yet — click the button below to get started.</td></tr>';
+    return;
+  }
+  thead.style.display = '';
+  tbody.innerHTML = softwareList.map(function(sw,i) {
+    var dots=''; for(var d=1;d<=5;d++) dots+='<div class="sev-dot'+(sw.severity&&d<=parseInt(sw.severity)?' on':'')+'"></div>';
+    var adm = sw.admin==='Yes' ? '<span class="pill-sm pill-yes">Yes</span>'
+            : sw.admin==='No'  ? '<span class="pill-sm pill-no">No</span>'
+            : sw.admin         ? '<span class="pill-sm pill-na">'+esc(sw.admin)+'</span>'
+            : '<span style="color:var(--sb-muted);font-size:0.77rem">—</span>';
+    var whoDisplay = sw.who
+      ? '<span style="font-size:0.77rem;color:var(--sb-text)">'+esc(sw.who)+'</span>'
+      : '<span style="color:var(--sb-muted);font-size:0.77rem">—</span>';
+    return '<tr>'
+      +'<td><input class="sw-name-input" type="text" placeholder="App or software name" data-idx="'+i+'" value="'+esc(sw.name)+'"/></td>'
+      +'<td>'+whoDisplay+'</td>'
+      +'<td><div class="sev-dots">'+dots+'</div></td>'
+      +'<td>'+adm+'</td>'
+      +'<td style="color:var(--sb-muted);font-size:0.8rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(sw.owner||'—')+'</td>'
+      +'<td style="text-align:center;white-space:nowrap">'
+      +'<button class="'+(sw.detailsFilled?'edit-btn done':'edit-btn')+'" data-edit="'+i+'">'+(sw.detailsFilled?'✓ Edited':'Edit Details')+'</button>'
+      +'<button class="remove-btn" data-remove="'+i+'">✕</button>'
+      +'</td></tr>';
+  }).join('');
+
+  tbody.querySelectorAll('.sw-name-input').forEach(function(el) {
+    el.addEventListener('input', function() { softwareList[parseInt(el.dataset.idx)].name = el.value; });
+  });
+  tbody.querySelectorAll('[data-edit]').forEach(function(el) {
+    el.addEventListener('click', function() { openDetails(parseInt(el.dataset.edit)); });
+  });
+  tbody.querySelectorAll('[data-remove]').forEach(function(el) {
+    el.addEventListener('click', function() { removeSoftware(parseInt(el.dataset.remove)); });
+  });
+}
+
+/* ── Details panel ── */
+function openDetails(idx) {
+  editingIdx = idx;
+  var sw = softwareList[idx];
+  document.getElementById('details-app-name').textContent = sw.name || 'Unnamed App';
+  restorePills('d-who-pills',   'd_who',   sw.who);
+  restorePills('d-admin-pills', 'd_admin', sw.admin);
+  restoreSev(sw.severity);
+  document.getElementById('d_owner').value = sw.owner||'';
+  document.getElementById('d_notes').value = sw.notes||'';
+  document.getElementById('sw-summary-view').style.display = 'none';
+  document.getElementById('sw-details-view').classList.add('active');
+  window.scrollTo(0,0);
+}
+function closeDetails() {
+  document.getElementById('sw-summary-view').style.display = '';
+  document.getElementById('sw-details-view').classList.remove('active');
+  editingIdx = null;
+}
+function saveDetails() {
+  if (editingIdx===null) return;
+  var sw      = softwareList[editingIdx];
+  sw.who      = document.getElementById('d_who').value;
+  sw.severity = document.getElementById('d_severity').value;
+  sw.admin    = document.getElementById('d_admin').value;
+  sw.owner    = document.getElementById('d_owner').value;
+  sw.notes    = document.getElementById('d_notes').value;
+  sw.detailsFilled = !!(sw.who||sw.severity||sw.admin||sw.owner);
+  renderTable(); closeDetails();
+}
+
+/* ── Pill / sev helpers ── */
+function setPill(fid,btn,val) {
+  btn.closest('.pill-group').querySelectorAll('.pill-btn').forEach(function(b){b.classList.remove('selected');});
+  btn.classList.add('selected');
+  document.getElementById(fid).value = val;
+}
+function setSev(val) {
+  document.querySelectorAll('.sev-btn').forEach(function(b,i){b.classList.toggle('selected',i<val);});
+  document.getElementById('d_severity').value = val;
+}
+function restorePills(gid,fid,val) {
+  document.getElementById(fid).value = val||'';
+  document.getElementById(gid).querySelectorAll('.pill-btn').forEach(function(b){
+    b.classList.toggle('selected', b.textContent.trim()===val);
+  });
+}
+function restoreSev(val) {
+  document.getElementById('d_severity').value = val||'';
+  document.querySelectorAll('.sev-btn').forEach(function(b,i){
+    b.classList.toggle('selected', !!val&&i<parseInt(val));
+  });
+}
+
+/* ── Review page ── */
+function buildReview() {
+  var name  = document.getElementById('info_name').value;
+  var email = document.getElementById('info_email').value;
+  var dept  = document.getElementById('info_dept').value;
+  var date  = new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  document.getElementById('reviewSummary').innerHTML =
+    '<div class="review-row"><span>Name</span><strong>'+esc(name||'—')+'</strong></div>'+
+    '<div class="review-row"><span>Email</span><strong>'+esc(email||'—')+'</strong></div>'+
+    '<div class="review-row"><span>Department</span><strong>'+esc(dept||'—')+'</strong></div>'+
+    '<div class="review-row"><span>Date</span><strong>'+date+'</strong></div>';
+  var valid = softwareList.filter(function(s){return s.name.trim();});
+  document.getElementById('reviewCount').textContent='('+valid.length+' entr'+(valid.length===1?'y':'ies')+')';
+  document.getElementById('reviewSwList').innerHTML = !valid.length
+    ? '<p style="color:var(--sb-muted);font-size:0.87rem">No software entries added.</p>'
+    : valid.map(function(s){
+        var meta=[
+          s.severity?'Criticality: '+s.severity+'/5':'',
+          s.admin   ?'Admin: '+s.admin:'',
+          s.owner   ?'Owner: '+s.owner:'',
+          s.who     ?'Used by: '+s.who:''
+        ].filter(Boolean).join(' · ')||'No details added';
+        return '<div class="review-sw-item"><strong>'+esc(s.name)+'</strong><span>'+esc(meta)+'</span></div>';
+      }).join('');
+}
+
+/* ── App Examples modal ── */
+function buildModal() {
+  document.getElementById('tab-apps').innerHTML =
+    '<p style="font-size:0.82rem;color:var(--brand-brown);font-weight:600;line-height:1.5;margin-bottom:1.25rem;background:var(--brand-soft);border:1.5px solid var(--brand-hover-border);border-radius:9px;padding:0.6rem 0.9rem">💡 Click an app to add it to your list. Click it again to remove it.</p>'
+    + Object.keys(APP_EXAMPLES).map(function(cat){
+        return '<div class="modal-category"><h4>'+cat+'</h4><div class="modal-apps">'
+          + APP_EXAMPLES[cat].map(function(app){
+              return '<span class="modal-app-tag" data-appname="'+esc(app)+'">'+app+'</span>';
+            }).join('')
+          +'</div></div>';
+      }).join('');
+
+  document.querySelectorAll('.modal-app-tag[data-appname]').forEach(function(el) {
+    el.addEventListener('click', function() {
+      var appName = el.dataset.appname;
+      var existsIdx = softwareList.findIndex(function(s) {
+        return s.name.trim().toLowerCase() === appName.toLowerCase();
+      });
+      if (existsIdx > -1) {
+        softwareList.splice(existsIdx, 1);
+        renderTable();
+        el.classList.remove('added');
+        el.textContent = appName;
+      } else {
+        softwareList.push({ name:appName, severity:'', admin:'', owner:'', who:'', notes:'', detailsFilled:false });
+        renderTable();
+        el.classList.add('added');
+        el.textContent = '✓ ' + appName;
+      }
+    });
+  });
+
+  refreshModalTags();
+
+  document.getElementById('tab-owners').innerHTML =
+    '<p style="font-size:0.82rem;color:var(--sb-muted);margin-bottom:1rem;line-height:1.5">Known owners/admins for common RCO apps.</p>'
+    +'<table class="owners-table"><thead><tr><th>Person</th><th>Apps They Own / Manage</th></tr></thead><tbody>'
+    + KNOWN_OWNERS.map(function(o){
+        return '<tr><td style="font-weight:700">'+esc(o.name)+'</td><td style="color:var(--sb-muted);font-size:0.8rem">'+esc(o.apps)+'</td></tr>';
+      }).join('')
+    +'</tbody></table>';
+}
+
+function refreshModalTags() {
+  document.querySelectorAll('.modal-app-tag[data-appname]').forEach(function(el) {
+    var exists = softwareList.some(function(s){return s.name.trim().toLowerCase()===el.dataset.appname.toLowerCase();});
+    if (exists) { el.classList.add('added');    el.textContent = '✓ '+el.dataset.appname; }
+    else        { el.classList.remove('added'); el.textContent = el.dataset.appname; }
+  });
+}
+
+function openModal(tab)  { buildModal(); switchTab(tab||'apps'); document.getElementById('examplesModal').classList.remove('hidden'); }
+function closeModal()    { document.getElementById('examplesModal').classList.add('hidden'); }
+function switchTab(tab)  {
+  document.getElementById('tab-apps').classList.toggle('active',   tab==='apps');
+  document.getElementById('tab-owners').classList.toggle('active', tab==='owners');
+  document.querySelectorAll('.modal-tab').forEach(function(t,i){ t.classList.toggle('active', i===(tab==='apps'?0:1)); });
+}
+document.getElementById('examplesModal').addEventListener('click', function(e){ if(e.target===this) closeModal(); });
+
+/* ── Help modal ── */
+function openHelpModal()  { document.getElementById('helpModal').classList.remove('hidden'); }
+function closeHelpModal() { document.getElementById('helpModal').classList.add('hidden'); }
+document.getElementById('helpModal').addEventListener('click', function(e){ if(e.target===this) closeHelpModal(); });
+
+/* ── Submit ── */
+async function submitSurvey() {
+  var btn   = document.getElementById('submitBtn');
+  var stat  = document.getElementById('submitStatus');
+  var name  = document.getElementById('info_name').value.trim();
+  var email = document.getElementById('info_email').value.trim();
+  var dept  = document.getElementById('info_dept').value;
+  if (!name||!email||!dept) {
+    stat.textContent='⚠️ Please go back and fill in your name, email, and department.';
+    stat.className='contact-status error'; return;
+  }
+  btn.textContent='Submitting…'; btn.disabled=true;
+  var payload={info_name:name,info_email:email,info_dept:dept,info_date:new Date().toLocaleDateString('en-US'),submitted_at:new Date().toISOString()};
+  var valid=softwareList.filter(function(s){return s.name.trim();});
+  valid.forEach(function(sw,i){
+    var b='app_r'+i;
+    payload[b+'_name']=sw.name; payload[b+'_severity']=sw.severity; payload[b+'_who']=sw.who;
+    payload[b+'_admin']=sw.admin; payload[b+'_owner']=sw.owner; payload[b+'_notes']=sw.notes;
+  });
+  fetch(SHEET_ENDPOINT,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).catch(function(){});
+  var formData={name:name,email:email,department:dept,software_count:valid.length,software:valid.map(function(sw){return{name:sw.name,severity:sw.severity,who:sw.who,admin:sw.admin,owner:sw.owner,notes:sw.notes};})};
+  var saved=window.saveSubmission?await window.saveSubmission({title:'RCO IT Software Inventory',dept:dept,url:'surveys/tech-discovery.html',formData:formData}):true;
+  if (saved) {
+    stat.textContent='✅ Survey submitted! Redirecting you back to the portal…';
+    stat.className='contact-status success'; btn.textContent='Submitted ✓';
+    setTimeout(function(){window.location.href='../index.html';},2500);
+  } else {
+    stat.textContent='❌ Submission failed. Please try again or contact itsupport@rowecasaorganics.com.';
+    stat.className='contact-status error'; btn.textContent='Submit Survey →'; btn.disabled=false;
+  }
+}
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+renderTable();
+</script>
+</body>
+</html>

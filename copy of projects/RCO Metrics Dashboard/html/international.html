@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>International Orders - RCO Metrics</title>
+<link rel="stylesheet" href="../css/main.css">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsvectormap@1.7.0/dist/jsvectormap.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jsvectormap@1.7.0/dist/jsvectormap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsvectormap@1.7.0/dist/maps/world.js"></script>
+<script src="../js/us-aea-en.js"></script>
+
+<style>
+.jvm-tooltip { pointer-events: none !important; }
+</style>
+
+</head>
+
+<body class="page-international">
+
+<div class="intl-container">
+
+  <div class="intl-header">
+    <div class="intl-header-left">
+      <select id="yearSelect"></select>
+    </div>
+    <div class="intl-header-center">
+      <h1>International Orders</h1>
+      <div class="intl-meta" id="metaText">Showing worldwide order distribution</div>
+    </div>
+    <div class="intl-header-right">
+      <button class="intl-view-btn active" data-view="world">World</button>
+      <button class="intl-view-btn" data-view="us">US States</button>
+      <button class="fullscreen-btn" id="fullscreenBtn" title="Fullscreen" aria-label="Fullscreen">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M9 4H4v5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M15 4h5v5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M15 20h5v-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M9 20H4v-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="intl-content">
+
+    <div class="intl-map-card">
+      <div class="intl-map-wrapper">
+        <div id="worldMapContainer"></div>
+        <div id="usMapContainer" style="display:none;"></div>
+      </div>
+      <div class="intl-legend">
+        <span class="intl-legend-label">Fewer orders</span>
+        <div class="intl-legend-bar"></div>
+        <span class="intl-legend-label">More orders</span>
+      </div>
+    </div>
+
+    <div class="intl-detail-panel">
+      <div class="intl-detail-header">
+        <h2 id="panelTitle">Overview</h2>
+        <div class="intl-detail-subtitle" id="panelSubtitle">Hover over a region for details</div>
+      </div>
+
+      <div class="intl-summary-stats">
+        <div class="intl-stat-box">
+          <div class="stat-label">Total Orders</div>
+          <div class="stat-value" id="statTotalOrders">--</div>
+        </div>
+        <div class="intl-stat-box">
+          <div class="stat-label" id="statRegionsLabel">Countries</div>
+          <div class="stat-value" id="statCountries">--</div>
+        </div>
+        <div class="intl-stat-box">
+          <div class="stat-label">Top Region</div>
+          <div class="stat-value" id="statTopRegion">--</div>
+        </div>
+        <div class="intl-stat-box">
+          <div class="stat-label">Weighted Avg / Region</div>
+          <div class="stat-value" id="statAvgOrders">--</div>
+        </div>
+      </div>
+
+      <div class="intl-top-list">
+        <h3 id="topListTitle">Top Countries</h3>
+        <div id="topListItems"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const API_BASE = "https://rco-metrics.hayden-howell.workers.dev";
+
+// Data fetched from Cloudflare KV (populated by backfill script)
+const ORDERS_DATA = {};
+let dataLoaded = false;
+
+async function loadIntlData() {
+  try {
+    const years = [2022, 2023, 2024, 2025, 2026];
+    const fetches = years.map(y =>
+      fetch(`${API_BASE}/intl/data?year=${y}`).then(r => r.ok ? r.json() : { countries: {}, usStates: {} })
+    );
+    const results = await Promise.all(fetches);
+    years.forEach((y, i) => {
+      if (Object.keys(results[i].countries).length > 0) {
+        ORDERS_DATA[y] = results[i];
+      }
+    });
+    dataLoaded = true;
+  } catch (e) {
+    console.error("Failed to load international data:", e);
+  }
+}
+
+const COUNTRY_NAMES = {
+  US:'United States', CA:'Canada', GB:'United Kingdom', AU:'Australia', DE:'Germany',
+  MX:'Mexico', JP:'Japan', FR:'France', BR:'Brazil', IT:'Italy',
+  ES:'Spain', NL:'Netherlands', SE:'Sweden', KR:'South Korea', IN:'India',
+  NZ:'New Zealand', CH:'Switzerland', NO:'Norway', DK:'Denmark', BE:'Belgium',
+  AT:'Austria', IE:'Ireland', PL:'Poland', PT:'Portugal', FI:'Finland',
+  SG:'Singapore', IL:'Israel', ZA:'South Africa', AE:'United Arab Emirates', CL:'Chile',
+  BH:'Bahrain', BM:'Bermuda', CN:'China', CO:'Colombia', CW:'Curacao',
+  CY:'Cyprus', DZ:'Algeria', EE:'Estonia', GD:'Grenada', GI:'Gibraltar',
+  GR:'Greece', HK:'Hong Kong', HR:'Croatia', HU:'Hungary', IS:'Iceland',
+  JO:'Jordan', KW:'Kuwait', KY:'Cayman Islands', KZ:'Kazakhstan', LT:'Lithuania',
+  LV:'Latvia', MT:'Malta', MV:'Maldives', MY:'Malaysia', PE:'Peru',
+  PH:'Philippines', QA:'Qatar', RO:'Romania', SA:'Saudi Arabia', SK:'Slovakia',
+  TH:'Thailand', TW:'Taiwan', VN:'Vietnam'
+};
+
+const US_STATE_NAMES = {
+  'US-CA':'California','US-TX':'Texas','US-NY':'New York','US-FL':'Florida','US-IL':'Illinois',
+  'US-PA':'Pennsylvania','US-OH':'Ohio','US-GA':'Georgia','US-NC':'North Carolina','US-MI':'Michigan',
+  'US-NJ':'New Jersey','US-VA':'Virginia','US-WA':'Washington','US-AZ':'Arizona','US-MA':'Massachusetts',
+  'US-TN':'Tennessee','US-IN':'Indiana','US-MO':'Missouri','US-MD':'Maryland','US-WI':'Wisconsin',
+  'US-CO':'Colorado','US-MN':'Minnesota','US-SC':'South Carolina','US-AL':'Alabama','US-LA':'Louisiana',
+  'US-KY':'Kentucky','US-OR':'Oregon','US-OK':'Oklahoma','US-CT':'Connecticut','US-UT':'Utah',
+  'US-IA':'Iowa','US-NV':'Nevada','US-AR':'Arkansas','US-MS':'Mississippi','US-KS':'Kansas',
+  'US-NM':'New Mexico','US-NE':'Nebraska','US-ID':'Idaho','US-WV':'West Virginia','US-HI':'Hawaii',
+  'US-NH':'New Hampshire','US-ME':'Maine','US-MT':'Montana','US-RI':'Rhode Island','US-DE':'Delaware',
+  'US-SD':'South Dakota','US-ND':'North Dakota','US-AK':'Alaska','US-VT':'Vermont','US-WY':'Wyoming',
+  'US-DC':'Washington DC'
+};
+
+let currentYear = 'all';
+let currentView = 'world';
+let worldMap = null;
+let usMap = null;
+
+function getColor(value, max) {
+  if (!value || value === 0) return '#f0ece6';
+  const ratio = Math.min(value / max, 1);
+
+  if (ratio < 0.33) {
+    const t = ratio / 0.33;
+    return lerpColor('#e8e3d8', '#c9b99a', t);
+  } else if (ratio < 0.66) {
+    const t = (ratio - 0.33) / 0.33;
+    return lerpColor('#c9b99a', '#ab9071', t);
+  } else {
+    const t = (ratio - 0.66) / 0.34;
+    return lerpColor('#ab9071', '#5f4b3c', t);
+  }
+}
+
+function lerpColor(a, b, t) {
+  const ah = parseInt(a.slice(1), 16);
+  const bh = parseInt(b.slice(1), 16);
+  const ar = (ah >> 16) & 0xff, ag = (ah >> 8) & 0xff, ab = ah & 0xff;
+  const br = (bh >> 16) & 0xff, bg = (bh >> 8) & 0xff, bb = bh & 0xff;
+  const rr = Math.round(ar + (br - ar) * t);
+  const rg = Math.round(ag + (bg - ag) * t);
+  const rb = Math.round(ab + (bb - ab) * t);
+  return `#${((1 << 24) + (rr << 16) + (rg << 8) + rb).toString(16).slice(1)}`;
+}
+
+function getYearData() {
+  if (currentYear === 'all') {
+    const mergedCountries = {};
+    const mergedStates = {};
+    for (const year of Object.keys(ORDERS_DATA)) {
+      for (const [code, count] of Object.entries(ORDERS_DATA[year].countries)) {
+        mergedCountries[code] = (mergedCountries[code] || 0) + count;
+      }
+      if (ORDERS_DATA[year].usStates) {
+        for (const [code, count] of Object.entries(ORDERS_DATA[year].usStates)) {
+          mergedStates[code] = (mergedStates[code] || 0) + count;
+        }
+      }
+    }
+    return { countries: mergedCountries, usStates: mergedStates };
+  }
+  return ORDERS_DATA[currentYear] || ORDERS_DATA[2025];
+}
+
+function applyRegionColors(map, data) {
+  if (!map || !map.regions) return;
+  const max = Math.max(...Object.values(data));
+  for (const [code, count] of Object.entries(data)) {
+    if (map.regions[code]) {
+      map.regions[code].element.setStyle('fill', getColor(count, max));
+    }
+  }
+}
+
+function initWorldMap() {
+  const container = document.getElementById('worldMapContainer');
+  if (container.offsetWidth === 0 || container.offsetHeight === 0) {
+    setTimeout(initWorldMap, 150);
+    return;
+  }
+
+  const data = getYearData().countries;
+
+  if (worldMap) {
+    worldMap.destroy();
+    worldMap = null;
+  }
+  container.innerHTML = '';
+
+  worldMap = new jsVectorMap({
+    selector: '#worldMapContainer',
+    map: 'world',
+    backgroundColor: 'transparent',
+    zoomButtons: true,
+    zoomOnScroll: true,
+    zoomOnScrollSpeed: 3,
+    zoomMax: 12,
+    zoomMin: 1,
+    zoomAnimate: true,
+    showTooltip: true,
+    regionStyle: {
+      initial: {
+        fill: '#f0ece6',
+        stroke: '#d7d1ca',
+        strokeWidth: 0.5,
+      },
+      hover: {
+        fillOpacity: 0.8,
+        cursor: 'pointer',
+      },
+    },
+    onRegionTooltipShow(event, tooltip, code) {
+      const count = data[code] || 0;
+      const name = COUNTRY_NAMES[code] || code;
+      const totalOrders = Object.values(data).reduce((a, b) => a + b, 0);
+      const pct = totalOrders > 0 ? ((count / totalOrders) * 100).toFixed(1) : '0.0';
+
+      if (count > 0) {
+        tooltip.text(
+          `<div style="text-align:center;min-width:120px;">
+            <div style="font-weight:700;margin-bottom:3px;">${name}</div>
+            <div>${count.toLocaleString()} orders</div>
+            <div style="opacity:0.8;font-size:0.85em;">${pct}% of total</div>
+          </div>`,
+          true
+        );
+      } else {
+        tooltip.text(
+          `<div style="text-align:center;">
+            <div style="font-weight:700;">${name}</div>
+            <div style="opacity:0.7;">No orders</div>
+          </div>`,
+          true
+        );
+      }
+    },
+    onRegionSelected(event, code) {
+      updatePanelForRegion(code, 'country');
+    }
+  });
+
+  applyRegionColors(worldMap, data);
+}
+
+function initUSMap() {
+  const container = document.getElementById('usMapContainer');
+  if (container.offsetWidth === 0 || container.offsetHeight === 0) {
+    setTimeout(initUSMap, 150);
+    return;
+  }
+
+  const data = getYearData().usStates || {};
+
+  if (usMap) {
+    usMap.destroy();
+    usMap = null;
+  }
+  container.innerHTML = '';
+
+  usMap = new jsVectorMap({
+    selector: '#usMapContainer',
+    map: 'us_aea_en',
+    backgroundColor: 'transparent',
+    zoomButtons: true,
+    zoomOnScroll: true,
+    showTooltip: true,
+    regionStyle: {
+      initial: {
+        fill: '#f0ece6',
+        stroke: '#d7d1ca',
+        strokeWidth: 0.5,
+      },
+      hover: {
+        fillOpacity: 0.8,
+        cursor: 'pointer',
+      },
+    },
+    onRegionTooltipShow(event, tooltip, code) {
+      const count = data[code] || 0;
+      const name = US_STATE_NAMES[code] || code;
+      const totalOrders = Object.values(data).reduce((a, b) => a + b, 0);
+      const pct = totalOrders > 0 ? ((count / totalOrders) * 100).toFixed(1) : '0.0';
+
+      if (count > 0) {
+        tooltip.text(
+          `<div style="text-align:center;min-width:120px;">
+            <div style="font-weight:700;margin-bottom:3px;">${name}</div>
+            <div>${count.toLocaleString()} orders</div>
+            <div style="opacity:0.8;font-size:0.85em;">${pct}% of US total</div>
+          </div>`,
+          true
+        );
+      } else {
+        tooltip.text(
+          `<div style="text-align:center;">
+            <div style="font-weight:700;">${name}</div>
+            <div style="opacity:0.7;">No orders</div>
+          </div>`,
+          true
+        );
+      }
+    },
+    onRegionSelected(event, code) {
+      updatePanelForRegion(code, 'state');
+    }
+  });
+
+  applyRegionColors(usMap, data);
+}
+
+function updatePanelForRegion(code, type) {
+  const yearData = getYearData();
+  const label = currentYear === 'all' ? 'all time' : currentYear;
+  let name, count, totalOrders;
+
+  if (type === 'state') {
+    name = US_STATE_NAMES[code] || code;
+    const data = yearData.usStates || {};
+    count = data[code] || 0;
+    totalOrders = Object.values(data).reduce((a, b) => a + b, 0);
+  } else {
+    name = COUNTRY_NAMES[code] || code;
+    count = yearData.countries[code] || 0;
+    totalOrders = Object.values(yearData.countries).reduce((a, b) => a + b, 0);
+  }
+
+  const pct = totalOrders > 0 ? ((count / totalOrders) * 100).toFixed(1) : '0.0';
+
+  document.getElementById('panelTitle').textContent = name;
+  document.getElementById('panelSubtitle').textContent =
+    `${count.toLocaleString()} orders ${label} (${pct}% of ${type === 'state' ? 'US' : 'global'} total)`;
+}
+
+function updateSummaryStats() {
+  const yearData = getYearData();
+  const label = currentYear === 'all' ? 'all time' : `for ${currentYear}`;
+
+  if (currentView === 'world') {
+    const entries = Object.entries(yearData.countries).sort((a, b) => b[1] - a[1]);
+    const total = entries.reduce((s, e) => s + e[1], 0);
+    const numRegions = entries.length;
+    const topCode = entries[0]?.[0] || '--';
+    const topName = COUNTRY_NAMES[topCode] || topCode;
+    // Weighted average: exclude top region (US) to show meaningful international avg
+    const nonTopEntries = entries.slice(1);
+    const nonTopTotal = nonTopEntries.reduce((s, e) => s + e[1], 0);
+    const avg = nonTopEntries.length > 0 ? Math.round(nonTopTotal / nonTopEntries.length) : 0;
+
+    document.getElementById('statTotalOrders').textContent = total.toLocaleString();
+    document.getElementById('statRegionsLabel').textContent = 'Countries';
+    document.getElementById('statCountries').textContent = numRegions;
+    document.getElementById('statTopRegion').textContent = topName;
+    document.getElementById('statAvgOrders').textContent = avg.toLocaleString();
+    document.getElementById('topListTitle').textContent = 'Top Countries';
+    document.getElementById('metaText').textContent = `Showing worldwide order distribution ${label}`;
+
+    renderTopList(entries.slice(0, 8), 'country', entries[0]?.[1] || 1);
+  } else {
+    const stateData = yearData.usStates || {};
+    const entries = Object.entries(stateData).sort((a, b) => b[1] - a[1]);
+    const total = entries.reduce((s, e) => s + e[1], 0);
+    const numRegions = entries.length;
+    const topCode = entries[0]?.[0] || '--';
+    const topName = US_STATE_NAMES[topCode] || topCode;
+    // Weighted average: exclude top state to show meaningful distribution
+    const nonTopEntries = entries.slice(1);
+    const nonTopTotal = nonTopEntries.reduce((s, e) => s + e[1], 0);
+    const avg = nonTopEntries.length > 0 ? Math.round(nonTopTotal / nonTopEntries.length) : 0;
+
+    document.getElementById('statTotalOrders').textContent = total.toLocaleString();
+    document.getElementById('statRegionsLabel').textContent = 'States';
+    document.getElementById('statCountries').textContent = numRegions;
+    document.getElementById('statTopRegion').textContent = topName;
+    document.getElementById('statAvgOrders').textContent = avg.toLocaleString();
+    document.getElementById('topListTitle').textContent = 'Top States';
+    document.getElementById('metaText').textContent = `Showing US state distribution ${label}`;
+
+    renderTopList(entries.slice(0, 8), 'state', entries[0]?.[1] || 1);
+  }
+}
+
+function renderTopList(entries, type, max) {
+  const container = document.getElementById('topListItems');
+  const nameMap = type === 'state' ? US_STATE_NAMES : COUNTRY_NAMES;
+  container.innerHTML = entries.map(([code, count], i) => {
+    const name = nameMap[code] || code;
+    const barWidth = Math.round((count / max) * 100);
+    return `
+      <div class="intl-top-item">
+        <div class="intl-top-rank">${i + 1}</div>
+        <div class="intl-top-name">${name}</div>
+        <div class="intl-top-count">${count.toLocaleString()}</div>
+        <div class="intl-top-bar-wrap"><div class="intl-top-bar" style="width:${barWidth}%"></div></div>
+      </div>
+    `;
+  }).join('');
+}
+
+function switchView(view) {
+  currentView = view;
+
+  document.querySelectorAll('.intl-view-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.view === view);
+  });
+
+  const worldEl = document.getElementById('worldMapContainer');
+  const usEl = document.getElementById('usMapContainer');
+
+  if (view === 'world') {
+    worldEl.style.display = '';
+    usEl.style.display = 'none';
+  } else {
+    worldEl.style.display = 'none';
+    usEl.style.display = '';
+  }
+
+  document.getElementById('panelTitle').textContent = 'Overview';
+  document.getElementById('panelSubtitle').textContent = 'Hover over a region for details';
+  updateSummaryStats();
+
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      if (view === 'world') {
+        initWorldMap();
+      } else {
+        initUSMap();
+      }
+    }, 100);
+  });
+}
+
+function populateYearSelect() {
+  const select = document.getElementById('yearSelect');
+  const years = Object.keys(ORDERS_DATA).sort((a, b) => b - a);
+  let options = '<option value="all"' + (currentYear === 'all' ? ' selected' : '') + '>All Time</option>';
+  options += years.map(y => `<option value="${y}"${y == currentYear ? ' selected' : ''}>${y}</option>`).join('');
+  select.innerHTML = options;
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  document.getElementById('metaText').textContent = 'Loading data...';
+
+  await loadIntlData();
+
+  populateYearSelect();
+
+  document.getElementById('yearSelect').addEventListener('change', (e) => {
+    currentYear = e.target.value === 'all' ? 'all' : parseInt(e.target.value);
+    switchView(currentView);
+  });
+
+  document.querySelectorAll('.intl-view-btn').forEach(btn => {
+    btn.addEventListener('click', () => switchView(btn.dataset.view));
+  });
+
+  document.getElementById('fullscreenBtn').addEventListener('click', () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(e => console.error('Fullscreen failed:', e));
+    } else {
+      document.exitFullscreen();
+    }
+  });
+
+  switchView('world');
+
+  // Auto-refresh every 5 minutes — updates data and recolors map without rebuilding it
+  setInterval(async () => {
+    await loadIntlData();
+    updateSummaryStats();
+    const data = getYearData();
+    if (currentView === 'world' && worldMap) {
+      applyRegionColors(worldMap, data.countries);
+    } else if (currentView === 'us' && usMap) {
+      applyRegionColors(usMap, data.usStates || {});
+    }
+  }, 5 * 60 * 1000);
+});
+
+window.addEventListener('message', (event) => {
+  if (event.data?.type === 'RCO_THEME') {
+    document.body.classList.toggle('dark', event.data.theme === 'dark');
+  }
+
+  if (event.data?.type === 'TV_VIEW_STATE') {
+    document.body.classList.toggle('tv-view-active', !!event.data.active);
+  }
+
+  if (event.data?.type === 'TV_ACTION' && event.data.target === 'international') {
+    if (event.data.view === 'world' || event.data.view === 'us') {
+      switchView(event.data.view);
+    }
+  }
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,11 @@
+name = "rco-metrics"
+main = "src/index.js"
+compatibility_date = "2024-10-01"
+
+[[kv_namespaces]]
+binding = "RCO_KPI"
+id = "99335b6946da44bcb9cceba79627d002"
+
+# KPI refresh every 6 hours + nightly backfill at 2 AM CT (7 AM UTC)
+[triggers]
+crons = ["0 */6 * * *", "0 7 * * *"]

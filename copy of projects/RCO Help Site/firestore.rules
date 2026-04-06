@@ -1,0 +1,15 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Submissions collection — authenticated users can read their own, IT admins can read all
+    match /submissions/{docId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Rockstars collection — authenticated users can write, IT admins can read all
+    match /rockstars/{docId} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}

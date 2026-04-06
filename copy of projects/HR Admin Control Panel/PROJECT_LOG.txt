@@ -1,0 +1,488 @@
+================================================================================
+RCO HR ADMIN CONTROL PANEL — PROJECT LOG
+Built: April 2, 2026
+Builder: Claude Code (Opus 4.6) with Hayden Howell
+================================================================================
+
+PROJECT OVERVIEW
+================
+Employee recognition display system for Rowe Casa Organics facility TVs (via
+Airtame). HR (Celina Bianco) manages all content. Zero IT dependency for
+day-to-day operations.
+
+LIVE URLS
+=========
+Admin Panel:  https://rco-hr-admin.web.app
+Display (All): https://rco-hr-display.web.app
+Rockstars:    https://rco-hr-display.web.app/rockstars
+Celebrations: https://rco-hr-display.web.app/celebrations
+
+Firebase Project: rco-hr-admin (Spark/free plan)
+Firebase Console: https://console.firebase.google.com/project/rco-hr-admin
+
+================================================================================
+TECH STACK
+================================================================================
+- React 18 + TypeScript + Vite (both apps)
+- Tailwind CSS (admin panel styling)
+- Firebase Firestore (database — all data including photos as base64)
+- Firebase Hosting (two sites: admin + display)
+- Firebase Auth (Google SSO, @rowecasaorganics.com only)
+- No Cloud Storage (free plan limitation — photos stored as base64 in Firestore)
+- No Cloud Functions (free plan — all sync logic runs client-side)
+
+================================================================================
+PROJECT STRUCTURE
+================================================================================
+HR Admin Control Panel/
+├── firebase.json              Multi-site hosting config
+├── .firebaserc                Project: rco-hr-admin, targets: admin + display
+├── firestore.rules            Security rules (RBAC enforced)
+├── firestore.indexes.json     Composite indexes
+├── package.json               Workspace root
+├── general_bamboohr_org_chart.csv   Original BambooHR export (328 employees)
+├── scripts/
+│   ├── compress-rockstar-photos.js  Compressed rockstar photos to base64
+│   └── import-org-chart.js          Downloaded/compressed all 328 org chart photos
+├── packages/
+│   ├── shared/                Shared TypeScript types & constants
+│   │   └── src/
+│   │       ├── types.ts       Employee, Campaign, DisplayContent, AppUser, etc.
+│   │       └── constants.ts   Brand colors, RBAC permissions, display defaults
+│   ├── admin/                 HR Admin Control Panel (Vite + React + Tailwind)
+│   │   ├── src/
+│   │   │   ├── App.tsx        Router with role-guarded routes
+│   │   │   ├── firebase.ts    Firebase init, IdP-agnostic auth provider
+│   │   │   ├── auth/          AuthProvider, domain restriction, auto-role bootstrap
+│   │   │   ├── rbac/          useRole hook, RoleGuard component
+│   │   │   ├── components/    Layout, Sidebar, Modal, ConfirmDialog, GuidedTour
+│   │   │   ├── pages/
+│   │   │   │   ├── Dashboard.tsx       Stats overview
+│   │   │   │   ├── LoginPage.tsx       Google SSO login
+│   │   │   │   ├── EmployeeRoster.tsx  CRUD table with search/filter
+│   │   │   │   ├── EmployeeForm.tsx    Add/edit modal with photo upload
+│   │   │   │   ├── Birthdays.tsx       Month-by-month birthday browser
+│   │   │   │   ├── Anniversaries.tsx   Month-by-month anniversary browser
+│   │   │   │   ├── Campaigns.tsx       Grouped by type, chronological, CRUD
+│   │   │   │   ├── QuickCampaign.tsx   One-click birthday/anniversary generation
+│   │   │   │   ├── ViewDisplays.tsx    Preview/launch facility displays
+│   │   │   │   ├── DisplaySettings.tsx Rotation speed, toggles, master on/off
+│   │   │   │   ├── UserManagement.tsx  Role assignment (IT Admin only)
+│   │   │   │   ├── ItOverview.tsx      System health, role matrix, data tools
+│   │   │   │   ├── SeedData.tsx        Import 10 rockstars with photos
+│   │   │   │   ├── ImportRoster.tsx    Import 328 org chart employees with photos
+│   │   │   │   └── CsvImport.tsx       General CSV import for HR
+│   │   │   ├── hooks/
+│   │   │   │   ├── useEmployees.ts     CRUD + auto-campaign sync
+│   │   │   │   └── useCampaigns.ts     CRUD + displayContent sync
+│   │   │   ├── utils/
+│   │   │   │   ├── photos.ts           Client-side image compression to base64
+│   │   │   │   └── autoCampaign.ts     Auto-creates birthday/anniversary campaigns
+│   │   │   └── data/
+│   │   │       ├── rockstar-seed.json  10 rockstars with compressed photos
+│   │   │       └── org-chart-seed.json 328 employees with compressed photos
+│   │   └── .env               Firebase config (rco-hr-admin project)
+│   └── display/               Facility Display App (Vite + React)
+│       ├── src/
+│       │   ├── App.tsx        Route-based display modes (all/rockstars/celebrations)
+│       │   ├── firebase.ts    Firestore connection (no auth needed)
+│       │   ├── slides/
+│       │   │   ├── RockstarSlide.tsx      Ported from original Rockstars design
+│       │   │   ├── BirthdaySlide.tsx      Gold-themed birthday cards
+│       │   │   ├── AnniversarySlide.tsx   Bronze-themed anniversary cards
+│       │   │   ├── CelebrationsBoard.tsx  Calendar + card layout for birthdays/anniversaries
+│       │   │   └── celebrations.css       TV-optimized calendar board styles
+│       │   ├── hooks/
+│       │   │   ├── useActiveContent.ts    Real-time Firestore listener
+│       │   │   ├── useDisplayConfig.ts    Display settings listener
+│       │   │   └── useCelebrations.ts     Auto-generate slides from employee data
+│       │   └── styles/
+│       │       └── brand.css              Ported RCO brand styles + animations
+│       ├── public/
+│       │   ├── logo.png       RCO logo
+│       │   └── star.png       Decorative star asset
+│       └── .env               Firebase config
+└── functions/                 Cloud Functions (NOT DEPLOYED — requires Blaze plan)
+    └── src/                   Kept for future upgrade to Blaze
+
+================================================================================
+ROLES & ACCESS (RBAC)
+================================================================================
+Roles stored in Firestore /users collection (not IdP claims — portable).
+Only @rowecasaorganics.com Google accounts can sign in.
+
+IT Admin:
+  - Full access to everything
+  - User management (assign roles)
+  - IT Overview (system health, data tools, imports)
+  - Delete employees & campaigns
+  - First user to sign in auto-gets this role
+
+HR:
+  - Employee roster (add, edit, import CSV)
+  - Birthdays & anniversaries
+  - Campaigns (create, edit, activate)
+  - Display settings
+  - View displays
+  - Default role for subsequent sign-ins
+
+C-Suite:
+  - Same as HR (executive visibility)
+
+All Others:
+  - Blocked at login (non-RCO domains rejected)
+
+================================================================================
+FIRESTORE SCHEMA
+================================================================================
+/users/{uid}
+  email, displayName, role, createdAt, lastLogin, createdBy
+
+/employees/{id}
+  firstName, lastName, displayName, email, department, jobTitle,
+  employeeId, phoneLast4, photoUrl (base64), photoStatus,
+  birthMonth, birthDay, hireDate, location, isActive,
+  createdAt, updatedAt, updatedBy
+
+/campaigns/{id}
+  type (birthday|anniversary|rockstar|custom), title, month, year,
+  isActive, displayOrder, createdAt, updatedAt, updatedBy
+
+/campaigns/{id}/entries/{id}
+  employeeRef, employeeName, employeeTitle, employeeTenure,
+  employeeInitials, photoUrl, quote, badgeText, isVisible,
+  displayOrder, createdAt, updatedAt
+
+/displayContent/{id}  (materialized view — synced client-side)
+  type, campaignId, entryId, employeeName, employeeTitle,
+  employeeTenure, employeeInitials, photoUrl, quote, badgeText,
+  displayOrder, isActive, updatedAt
+
+/displayConfig/default
+  rotationSpeed, transitionDuration, showProgressBar, showDotNav, isLive
+
+================================================================================
+KEY FEATURES
+================================================================================
+
+AUTO-CAMPAIGN CREATION:
+  When HR adds/edits an employee's birthday or hire date, the system
+  automatically finds or creates the appropriate monthly campaign and
+  adds the employee to it. No manual campaign creation needed.
+
+CSV IMPORT:
+  HR can download a template, fill it in, and upload. Handles:
+  - Flexible column headers (BambooHR, custom, whatever)
+  - Missing fields (only name required)
+  - Combined "Name" column auto-split into first/last
+  - Birthday parsing: separate month/day, "4/15", full dates, "DOB"
+  - Duplicate detection: checks name + email against existing employees
+  - Per-row error handling: one bad row won't kill the import
+  - Auto-creates campaigns for any birthdays/hire dates in the data
+
+DISPLAY APP:
+  - /              All content combined (rockstars + birthdays + anniversaries)
+  - /rockstars     Rockstar slides only (rotating)
+  - /celebrations  Calendar board with birthday/anniversary cards (static view)
+  - Real-time updates from Firestore
+  - Fullscreen kiosk-ready (press F or click)
+  - Keyboard nav (arrows, spacebar)
+  - Configurable rotation speed, progress bar, dot nav
+
+GUIDED TOUR:
+  - Auto-launches on first visit
+  - "Retake Tour" button in sidebar
+  - Anchors to sidebar nav items with arrow + gold highlight
+  - Walks through all features with descriptions
+  - Remembered per-browser via localStorage
+
+================================================================================
+AUTH ARCHITECTURE (IdP-Agnostic)
+================================================================================
+Auth provider determined by VITE_AUTH_PROVIDER env var:
+  "google" (current) — Google Workspace SSO
+  "microsoft" (future) — Microsoft 365 / Entra ID
+
+Switching IdPs requires:
+  1. Change env var
+  2. Enable new provider in Firebase console
+  3. Map old UIDs to new UIDs by email in /users collection
+  Roles survive because they're in Firestore, not IdP claims.
+
+================================================================================
+BRAND DESIGN
+================================================================================
+Source: https://brand.rowecasaorganics.com
+
+Colors:
+  Deep Brown: #473C31     Warm Brown: #5f4b3c
+  Taupe: #bd9979          Gold: #d4a04a
+  Bronze: #C4721C         Off-White: #F9F8F6
+  Cream: #f9f6f2          Light Gray: #d7d1ca
+  Border: #E8E4DF
+
+Fonts:
+  UI: Avenir Next (sans-serif)
+  Headings: Noto Serif
+
+Admin panel inspired by BambooHR's clean interface.
+Display app preserves the original Rockstars design (particles, shimmer,
+star decorations, gold gradients).
+
+================================================================================
+DECISIONS & TRADE-OFFS
+================================================================================
+
+1. PHOTOS AS BASE64 IN FIRESTORE
+   Why: Firebase free plan doesn't include Cloud Storage.
+   Trade-off: Larger Firestore documents (~15-30KB per photo at 200-300px).
+   Works fine for <500 employees. If roster grows significantly, upgrade to
+   Blaze plan and move to Cloud Storage.
+
+2. CLIENT-SIDE DISPLAY SYNC (NO CLOUD FUNCTIONS)
+   Why: Cloud Functions require Blaze plan.
+   Trade-off: The admin panel writes to /displayContent directly when
+   campaigns are created/updated. If two admins edit simultaneously,
+   last write wins. Acceptable for HR team of 1-3 people.
+
+3. SEPARATE FIREBASE PROJECT
+   Original plan was to reuse rco-rockstars project. Changed to rco-hr-admin
+   to keep the existing Rockstars site untouched.
+
+4. CELEBRATIONS BOARD vs ROTATING SLIDES
+   Birthday/anniversary display uses a calendar board layout (left: calendar,
+   right: cards) instead of rotating individual slides. Better for persistent
+   wall displays where people walk by and read.
+
+================================================================================
+NPM SECURITY NOTE (April 2, 2026)
+================================================================================
+Kasey Tomasek flagged NPM security vulnerabilities. Status:
+  - npm v11.9.0, Node v24.14.0 (both latest)
+  - Root project: 0 vulnerabilities
+  - Functions package: 9 low severity (Firebase Admin SDK chain, not deployed)
+  - Run `npm audit` periodically to check
+  - NPM owned by GitHub, owned by Microsoft
+
+================================================================================
+FUTURE PHASES (Not Yet Built)
+================================================================================
+
+Phase 2:
+  - Employee Photo Upload Portal (QR code, mobile-first)
+  - Approval workflow for submitted photos
+  - Campaign start/end dates
+
+Future:
+  - BambooHR API integration (when access opens up)
+  - Microsoft 365 / Entra ID SSO migration
+  - Upgrade to Blaze plan for Cloud Storage + Cloud Functions
+  - Code-splitting to reduce admin bundle size (~3MB with embedded photos)
+
+================================================================================
+SESSION LOG — April 3, 2026
+================================================================================
+
+BIRTHDAY/ANNIVERSARY DISPLAY FIXES:
+  - Celebrations board right side now only shows birthdays on the actual day
+    (was showing all birthdays for the month)
+  - Same filter applied to anniversaries — only show on actual day
+  - Removed the old combined view route (/celebrations, /birthdays)
+  - Default display (/) now shows CelebrationsBoard (calendar + cards)
+  - /rockstars route shows only rockstar slides
+  - Updated admin ViewDisplays page: 2 display cards instead of 3
+    (Birthdays & Anniversaries + Rockstars Only)
+  - Added cache-busting param to admin preview iframe
+
+APP RENAME:
+  - Renamed from "HR Admin" to "HR TV Admin" across all locations:
+    browser tab, sidebar, mobile header, login page, guided tour welcome
+
+IT OVERVIEW CLEANUP:
+  - Removed "Display Configuration" and "Data Tools" sections
+
+CSV EXPORT:
+  - Added "Export CSV" button to Employee Roster page
+  - Downloads all active employees as CSV (name, email, department,
+    employee ID, birthday, hire date, phone last 4)
+
+PHOTO SUBMISSION SYSTEM (Phase 2 delivered):
+  - Public upload page: https://rco-hr-display.web.app/upload
+  - Employees scan QR code, search by name, upload a photo
+  - Photos compressed to 800px/0.85 quality (same as admin uploads)
+  - Admin "Photo Submissions" tab with 3 sub-tabs:
+    - Pending: card view with Approve/Reject buttons
+    - Reviewed: table with ability to flip approvals/rejections
+    - QR Code: printable QR code + shareable URL
+  - Approved photos auto-update employee profile in Firestore
+  - Rejecting a previously-approved photo clears it from the profile
+  - New Firestore collection: /photoSubmissions
+  - Firestore rules: public create, authorized roles manage
+
+PHOTO QUALITY FIX:
+  - Increased photo compression from 300px/0.7 to 800px/0.85
+  - Fixes pixelation on large TV display circles (up to 420px)
+  - Only affects new uploads; existing photos need re-upload
+
+GUIDED TOUR OVERHAUL:
+  - Expanded from 11 to 13 steps with detailed bullet-point explanations
+  - New dedicated steps for: CSV Import, CSV Export, Photo Submissions
+  - Campaigns split into Overview + step-by-step Rockstar creation
+  - Tour now anchors to in-page buttons (Import CSV, Export CSV) with
+    arrow pointing up, not just sidebar items
+  - Photo Submissions step explains QR code and shareable URL
+
+SIDEBAR IMPROVEMENTS:
+  - IT tabs (User Management, IT Overview) separated with divider
+  - Purple "IT EYES ONLY" label above IT-only nav items
+  - IT nav items use purple highlight when active
+
+DYNAMIC ROLE ACCESS MATRIX:
+  - Replaced static checkmark table on IT Overview with clickable toggles
+  - Three access levels: Manage (green), Read Only (blue), Can't See (gray)
+  - Click any badge to cycle through levels
+  - IT Admin locked to full Manage (prevents lockout)
+  - HR and C-Suite roles are toggleable
+  - Saves to Firestore /rolePermissions collection in real-time
+  - useRole hook now reads from Firebase instead of hardcoded constants
+  - All users see permission changes immediately
+
+HARDCODED ROLE ASSIGNMENTS:
+  - andre.neidly@rowecasaorganics.com → IT Admin
+  - chase.parrish@rowecasaorganics.com → IT Admin
+  - philip.williams@rowecasaorganics.com → IT Admin
+  - celina.bianco@rowecasaorganics.com → HR
+  - Applied on every login; overrides any manual role changes
+
+CAMPAIGN CHRONOLOGICAL ORDERING:
+  - Campaigns page now sorts newest month first within each type group
+    (April before January in same year)
+  - Display slideshow now uses chronological sort: displayOrder = year*100+month
+    (January 2026 = 202601, April 2026 = 202604)
+  - Ensures rockstar slides play in chronological order on TV
+
+UPDATED FIRESTORE SCHEMA:
+  /photoSubmissions/{id}
+    employeeId, employeeName, photoData (base64), status (pending|approved|rejected),
+    submittedAt, reviewedAt, reviewedBy
+
+  /rolePermissions/{roleId}  (hr, csuite — it_admin always full access)
+    viewDashboard, manageRoster, manageContent, manageCampaigns,
+    manageUsers, viewItOverview — each: 'none' | 'read' | 'manage'
+
+UPDATED LIVE URLS:
+  Photo Upload: https://rco-hr-display.web.app/upload
+
+================================================================================
+SESSION LOG — April 6, 2026
+================================================================================
+
+CELEBRATIONS DISPLAY OVERHAUL:
+  - Replaced static CelebrationsBoard (calendar + cards) with a rotating
+    slideshow on the default display route (/)
+  - Birthdays and anniversaries now use the same rockstar-style slide layout:
+    photo circle on left, name/info on right, same brown/cream/gold colors
+  - Slide order: today's birthdays → today's anniversaries → upcoming combined
+  - "No Celebrations Today" combined slide shown when nobody has a birthday
+    or anniversary today (replaces two separate empty slides)
+
+FIREWORKS ANIMATIONS:
+  - Added CSS-only firework sparkle bursts (gold, white, taupe, bronze)
+    to birthday, anniversary, empty-today, and upcoming slides
+  - Fireworks on both left panel (6 bursts) and right panel (5 bursts)
+  - Inline firework icon replaces star PNG in slide titles
+  - Rockstar slides unchanged — still use original star decorations
+
+UPCOMING CELEBRATIONS SLIDE:
+  - Single combined slide: birthdays on left, anniversaries on right
+  - Centered header: "Upcoming [Month] Celebrations" badge
+  - Gold divider between columns
+  - Auto-scroll: if list overflows, smoothly scrolls using GPU-accelerated
+    CSS transform (translateY) over (rotationSpeed - 2s), then sits at
+    bottom for 2s before advancing to next slide
+  - Both columns scroll independently
+  - No visible scrollbar
+
+ANNIVERSARY FLAIR MESSAGES (Hallmark-inspired):
+  - Each work anniversary slide displays a tenure-specific headline and
+    appreciation message below the employee's name
+  - 5 unique messages per tenure bracket so duplicates on the same day
+    each get a different message
+  - Brackets: 1yr, 2-3yr, 4yr, 5yr, 6-9yr, 10yr, 11-14yr, 15-19yr,
+    20yr, 21+yr
+  - Styled with gold left border, italic headline in gold, message in brown
+  - Large decorative year number at bottom-right (low opacity)
+
+ANNIVERSARY TEXT FORMAT:
+  - Changed from "3 Years" to "3rd Anniversary!" everywhere
+  - Uses ordinal format (1st, 2nd, 3rd, 4th, etc.)
+  - Applied to individual slides and upcoming list
+
+TITLE ALIGNMENT:
+  - Removed leading confetti icon from "WORK ANNIVERSARY", "HAPPY BIRTHDAY",
+    and empty-today titles so text left-aligns with the name beneath
+  - "WORK ANNIVERSARY" forced to single line (white-space: nowrap)
+
+BIRTHDAY SLIDES:
+  - Decorative cake emoji at bottom-right of right panel (low opacity)
+
+PROGRESS BAR FIX:
+  - Fixed progress bar getting "hung up" at 100%
+  - Reset progress to 0 before advancing slides
+  - Removed CSS transition on progress bar (was animating backwards)
+
+ANNIVERSARY DATE BUG FIX:
+  - Fixed: employees with anniversaries later in the current month were
+    not showing in the upcoming list
+  - Root cause: years calculated as of today, not as of their anniversary day
+    Example: hired April 13 2025, today April 6 2026 → years = 1 - 1 = 0
+    → filtered out by "years > 0" check
+  - Fix: calculate years as of the anniversary day (currentYear - hireYear)
+    so first-year anniversaries are included
+
+MIDNIGHT AUTO-REFRESH:
+  - Added useDateKey hook that fires at midnight + 1s
+  - Firestore celebration listener re-subscribes with fresh date values
+  - Today's celebrations move to past, tomorrow's become today
+  - New month automatically loads new month's data
+  - No page refresh needed for 24/7 TV displays
+
+EMPLOYEE PHOTO UPGRADE:
+  - Re-downloaded all 325 BambooHR photos at 1200px / 92% JPEG quality
+    (was 200px / default quality from original bulk import)
+  - Script: scripts/upgrade-photos.js
+  - Matches CSV employees to Firestore by name, updates ONLY photoUrl
+  - Uses Firebase CLI refresh token for authentication
+  - Rockstar/displayContent photos left unchanged (manually uploaded)
+
+PHOTO RENDERING:
+  - Removed image-rendering: -webkit-optimize-contrast (was sharpening
+    pixelation artifacts and making blurriness worse)
+  - Set image-rendering: auto with GPU compositing hints
+  - Added backface-visibility: hidden and translateZ(0) for smooth rendering
+
+FILES CHANGED:
+  packages/display/src/App.tsx — Slideshow rotator for celebrations
+  packages/display/src/hooks/useCelebrations.ts — Today/upcoming split + midnight refresh
+  packages/display/src/slides/BirthdaySlide.tsx — Rockstar-style layout + fireworks
+  packages/display/src/slides/AnniversarySlide.tsx — Rockstar-style + flair messages
+  packages/display/src/slides/EmptyTodaySlide.tsx — Combined no-celebrations slide
+  packages/display/src/slides/UpcomingCelebrationsSlide.tsx — Split columns + auto-scroll
+  packages/display/src/styles/brand.css — Fireworks, flair, upcoming layout, photo fixes
+  scripts/upgrade-photos.js — Bulk photo re-download at 1200px
+
+FILES CREATED:
+  packages/display/src/slides/UpcomingCelebrationsSlide.tsx
+  packages/display/src/slides/EmptyTodaySlide.tsx
+  packages/display/src/slides/MiniCalendar.tsx (created then removed from use)
+  scripts/upgrade-photos.js
+
+FILES NO LONGER USED:
+  packages/display/src/slides/UpcomingBirthdaysSlide.tsx (replaced by combined)
+  packages/display/src/slides/UpcomingAnniversariesSlide.tsx (replaced by combined)
+  packages/display/src/slides/CelebrationsBoard.tsx (replaced by slideshow)
+  packages/display/src/slides/celebrations.css (was for CelebrationsBoard)
+
+================================================================================
+END OF LOG
+================================================================================

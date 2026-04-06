@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fulfillment Dashboard - RCO</title>
+<link rel="stylesheet" href="../css/main.css">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #f5f1ec; font-family: 'Inter', sans-serif; overflow: hidden; height: 100vh; }
+
+.fd-container {
+  height: 100vh; display: flex; flex-direction: column;
+  padding: 20px; gap: 16px;
+}
+
+.fd-header {
+  display: flex; justify-content: center; align-items: center; position: relative;
+  background: white; padding: 14px 20px; border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(95,75,60,0.12), 0 1px 3px rgba(95,75,60,0.08);
+  border: 1px solid rgba(141,129,115,0.12); flex-shrink: 0;
+}
+.fd-header h1 {
+  font-family: "Noto Serif", Georgia, serif;
+  font-size: 1.4em; color: #5f4b3c; margin: 0; text-align: center;
+}
+.fd-meta { font-size: 0.85em; color: #8d8173; text-align: center; }
+.fd-header .fullscreen-btn { position: absolute; right: 18px; top: 50%; transform: translateY(-50%); }
+
+.fd-content {
+  flex: 1; display: grid; grid-template-columns: 1fr 1fr;
+  gap: 16px; min-height: 0;
+}
+
+.fd-col {
+  display: flex; flex-direction: column; gap: 12px; min-height: 0;
+}
+
+.fd-col-title {
+  font-family: "Noto Serif", Georgia, serif;
+  font-size: 1.1em; font-weight: 700; color: #5f4b3c;
+  text-align: center; padding: 10px; background: white; border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(95,75,60,0.08); border: 1px solid rgba(141,129,115,0.1);
+  flex-shrink: 0;
+}
+
+.fd-stats {
+  display: flex; flex-direction: column; gap: 12px; flex: 1; min-height: 0;
+}
+
+.fd-stat {
+  background: white; border-radius: 12px; padding: 20px 28px; flex: 1;
+  display: flex; justify-content: space-between; align-items: center;
+  box-shadow: 0 2px 8px rgba(95,75,60,0.06); border: 1px solid rgba(141,129,115,0.08);
+}
+.fd-stat-value { font-size: 3.5vw; font-weight: 700; color: #5f4b3c; }
+.fd-stat-label { font-size: 1.3vw; color: #a0906f; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+.fd-stat.fd-stat-unfulfilled .fd-stat-value { color: #8b7355; }
+.fd-stat.fd-stat-fulfilled .fd-stat-value { color: #27ae60; }
+
+/* Dark mode */
+body.dark { background: #1a1614; }
+body.dark .fd-header { background: #2a2420; border-color: rgba(255,255,255,0.06); box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+body.dark .fd-header h1 { color: #e0dcd5; }
+body.dark .fd-meta { color: #8d8173; }
+body.dark .fd-col-title { background: #2a2420; color: #e0dcd5; border-color: rgba(255,255,255,0.06); box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+body.dark .fd-stat { background: #2a2420; border-color: rgba(255,255,255,0.06); box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+body.dark .fd-stat-value { color: #e0dcd5; }
+body.dark .fd-stat-label { color: #8d8173; }
+body.dark .fd-stat.fd-stat-unfulfilled .fd-stat-value { color: #c4a97d; }
+body.dark .fd-stat.fd-stat-fulfilled .fd-stat-value { color: #2ecc71; }
+
+/* Responsive height */
+@media (max-height: 900px) {
+  .fd-container { padding: 12px; gap: 10px; }
+  .fd-header { padding: 10px 16px; }
+  .fd-header h1 { font-size: 1.2em; }
+  .fd-content { gap: 10px; }
+  .fd-col { gap: 8px; }
+  .fd-stats { gap: 8px; }
+  .fd-stat { padding: 14px 20px; }
+}
+@media (max-height: 700px) {
+  .fd-container { padding: 8px; gap: 6px; }
+  .fd-header { padding: 6px 12px; }
+  .fd-header h1 { font-size: 1em; }
+  .fd-content { gap: 6px; }
+  .fd-col { gap: 6px; }
+  .fd-stats { gap: 6px; }
+  .fd-stat { padding: 10px 14px; border-radius: 8px; }
+  .fd-col-title { padding: 6px; font-size: 0.95em; }
+}
+
+/* Responsive width */
+@media (max-width: 768px) {
+  .fd-content { grid-template-columns: 1fr; overflow-y: auto; }
+  .fd-stat-value { font-size: 8vw; }
+  .fd-stat-label { font-size: 3vw; }
+  body { overflow: auto; }
+}
+
+body.tv-view-active .fd-container { padding: 16px; max-width: none; }
+</style>
+</head>
+<body class="page-fulfillment-dashboard">
+
+<div class="fd-container">
+  <div class="fd-header">
+    <div style="text-align:center;">
+      <h1>Fulfillment Dashboard</h1>
+      <div class="fd-meta" id="lastUpdated">Loading...</div>
+    </div>
+    <button class="fullscreen-btn" id="fullscreenBtn" title="Fullscreen" aria-label="Fullscreen">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M9 4H4v5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M15 4h5v5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M9 20H4v-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M15 20h5v-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="fd-content">
+    <div class="fd-col">
+      <div class="fd-col-title">Retail</div>
+      <div class="fd-stats">
+        <div class="fd-stat">
+          <div class="fd-stat-label">Yesterday Fulfilled</div>
+          <div class="fd-stat-value" id="rYesterday">--</div>
+        </div>
+        <div class="fd-stat fd-stat-unfulfilled">
+          <div class="fd-stat-label">Unfulfilled</div>
+          <div class="fd-stat-value" id="rUnfulfilled">--</div>
+        </div>
+        <div class="fd-stat fd-stat-fulfilled">
+          <div class="fd-stat-label">Today Fulfilled</div>
+          <div class="fd-stat-value" id="rToday">--</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="fd-col">
+      <div class="fd-col-title">Wholesale</div>
+      <div class="fd-stats">
+        <div class="fd-stat">
+          <div class="fd-stat-label">Yesterday Fulfilled</div>
+          <div class="fd-stat-value" id="wYesterday">--</div>
+        </div>
+        <div class="fd-stat fd-stat-unfulfilled">
+          <div class="fd-stat-label">Unfulfilled</div>
+          <div class="fd-stat-value" id="wUnfulfilled">--</div>
+        </div>
+        <div class="fd-stat fd-stat-fulfilled">
+          <div class="fd-stat-label">Today Fulfilled</div>
+          <div class="fd-stat-value" id="wToday">--</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_BASE = "https://rco-metrics.hayden-howell.workers.dev";
+
+async function loadDashboard() {
+  try {
+    const res = await fetch(`${API_BASE}/fulfillment-dashboard`);
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    const data = await res.json();
+    const r = data.retail || {};
+    const w = data.wholesale || {};
+
+    document.getElementById('rYesterday').textContent = (r.yesterdayFulfilled || 0).toLocaleString();
+    document.getElementById('rUnfulfilled').textContent = (r.unfulfilled || 0).toLocaleString();
+    document.getElementById('rToday').textContent = (r.todayFulfilled || 0).toLocaleString();
+
+    document.getElementById('wYesterday').textContent = (w.yesterdayFulfilled || 0).toLocaleString();
+    document.getElementById('wUnfulfilled').textContent = (w.unfulfilled || 0).toLocaleString();
+    document.getElementById('wToday').textContent = (w.todayFulfilled || 0).toLocaleString();
+
+    const now = new Date();
+    document.getElementById('lastUpdated').textContent =
+      `Updated ${now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
+  } catch (e) {
+    console.error('Failed to load fulfillment dashboard:', e);
+    document.getElementById('lastUpdated').textContent = 'Error loading data';
+  }
+}
+
+loadDashboard();
+setInterval(loadDashboard, 10 * 60 * 1000);
+
+document.getElementById('fullscreenBtn')?.addEventListener('click', () => {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+  else document.exitFullscreen();
+});
+
+window.addEventListener('message', (e) => {
+  if (e.data?.type === 'RCO_THEME') document.body.classList.toggle('dark', e.data.theme === 'dark');
+});
+window.addEventListener('message', (e) => {
+  if (e.data?.type === 'TV_VIEW_STATE') document.body.classList.toggle('tv-view-active', e.data.active);
+});
+</script>
+</body>
+</html>

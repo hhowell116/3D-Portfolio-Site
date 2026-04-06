@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sales - RCO</title>
+<link rel="stylesheet" href="../css/main.css">
+</head>
+<body class="page-sales">
+<div class="sales-container">
+  <div class="sales-header">
+    <h1>Sales Dashboard</h1>
+    <div class="sales-meta" id="lastUpdated">Loading...</div>
+    <button class="fullscreen-btn" id="fullscreenBtn" title="Fullscreen" aria-label="Fullscreen">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M9 4H4v5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 4h5v5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 20H4v-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 20h5v-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+
+  <div class="sales-content">
+    <!-- Retail -->
+    <div class="sales-column">
+      <div class="sales-col-title">Retail</div>
+
+      <div class="sales-row">
+        <div class="sales-card"><div class="sales-label">Today's Sales</div><div class="sales-value" id="rTodaySales">--</div></div>
+        <div class="sales-card"><div class="sales-label">Today's Orders</div><div class="sales-value" id="rTodayOrders">--</div></div>
+      </div>
+
+      <div class="sales-row">
+        <div class="sales-card"><div class="sales-label">Month to Date Sales</div><div class="sales-value" id="rMtdSales">--</div></div>
+        <div class="sales-card"><div class="sales-label">Month to Date Orders</div><div class="sales-value" id="rMtdOrders">--</div></div>
+      </div>
+
+      <div class="sales-card sales-ytd-card">
+        <div class="sales-label">Year to Date Sales</div>
+        <div class="sales-value sales-value-lg" id="rYtdSales">--</div>
+      </div>
+
+      <div class="sales-row">
+        <div class="sales-card"><div class="sales-label">Year to Date Orders</div><div class="sales-value" id="rYtdOrders">--</div></div>
+        <div class="sales-card"><div class="sales-label">Today's AOV</div><div class="sales-value" id="rAOV">--</div></div>
+      </div>
+
+      <div class="sales-row">
+        <div class="sales-card"><div class="sales-label">Today Fulfilled</div><div class="sales-value sales-good" id="rFulfilled">--</div></div>
+        <div class="sales-card"><div class="sales-label">Today Unfulfilled</div><div class="sales-value sales-warn" id="rUnfulfilled">--</div></div>
+      </div>
+
+      <div class="sales-card">
+        <div class="sales-label">Units Sold Today</div>
+        <div class="sales-value" id="rUnits">--</div>
+      </div>
+    </div>
+
+    <!-- Wholesale -->
+    <div class="sales-column sales-column-disabled" id="wholesaleCol">
+      <div class="sales-col-title">Wholesale</div>
+
+      <div class="sales-row">
+        <div class="sales-card"><div class="sales-label">Today's Sales</div><div class="sales-value" id="wTodaySales">--</div></div>
+        <div class="sales-card"><div class="sales-label">Today's Orders</div><div class="sales-value" id="wTodayOrders">--</div></div>
+      </div>
+
+      <div class="sales-row">
+        <div class="sales-card"><div class="sales-label">Month to Date Sales</div><div class="sales-value" id="wMtdSales">--</div></div>
+        <div class="sales-card"><div class="sales-label">Month to Date Orders</div><div class="sales-value" id="wMtdOrders">--</div></div>
+      </div>
+
+      <div class="sales-card sales-ytd-card">
+        <div class="sales-label">Year to Date Sales</div>
+        <div class="sales-value sales-value-lg" id="wYtdSales">--</div>
+      </div>
+
+      <div class="sales-row">
+        <div class="sales-card"><div class="sales-label">Year to Date Orders</div><div class="sales-value" id="wYtdOrders">--</div></div>
+        <div class="sales-card"><div class="sales-label">Today's AOV</div><div class="sales-value" id="wAOV">--</div></div>
+      </div>
+
+      <div class="sales-row">
+        <div class="sales-card"><div class="sales-label">Today Fulfilled</div><div class="sales-value sales-good" id="wFulfilled">--</div></div>
+        <div class="sales-card"><div class="sales-label">Today Unfulfilled</div><div class="sales-value sales-warn" id="wUnfulfilled">--</div></div>
+      </div>
+
+      <div class="sales-card">
+        <div class="sales-label">Units Sold Today</div>
+        <div class="sales-value" id="wUnits">--</div>
+      </div>
+    </div>
+
+    <!-- YTD Totals — inside content grid, full width -->
+    <div class="sales-alltime">
+    <div class="sales-alltime-title">Year to Date Totals</div>
+    <div class="sales-alltime-row">
+      <div class="sales-alltime-box">
+        <div class="sales-alltime-sub">YTD Revenue</div>
+        <div class="sales-alltime-val" id="atCombinedRev">--</div>
+      </div>
+      <div class="sales-alltime-box">
+        <div class="sales-alltime-sub">YTD Orders</div>
+        <div class="sales-alltime-val" id="atCombinedOrders">--</div>
+      </div>
+      <div class="sales-alltime-box">
+        <div class="sales-alltime-sub">YTD Avg Order Value</div>
+        <div class="sales-alltime-val" id="atCombinedAOV">--</div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+const API_BASE = "https://rco-metrics.hayden-howell.workers.dev";
+const fmt = (n) => '$' + (n||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtN = (n) => (n||0).toLocaleString();
+
+async function loadSales() {
+  try {
+    const [salesRes, metricsRes] = await Promise.all([
+      fetch(`${API_BASE}/sales-summary`),
+      fetch(`${API_BASE}/daily-metrics`),
+    ]);
+    const sales = await salesRes.json();
+    const metrics = await metricsRes.json();
+
+    const r = sales.retail || {};
+    const rm = metrics.retail || {};
+
+    document.getElementById('rTodaySales').textContent = fmt(rm.sales || r.todaySales);
+    document.getElementById('rTodayOrders').textContent = fmtN(rm.totalOrders || r.todayOrders);
+    document.getElementById('rMtdSales').textContent = fmt(r.mtdSales);
+    document.getElementById('rMtdOrders').textContent = fmtN(r.mtdOrders);
+    document.getElementById('rYtdSales').textContent = fmt(r.ytdSales);
+    document.getElementById('rYtdOrders').textContent = fmtN(r.ytdOrders);
+    document.getElementById('rAOV').textContent = fmt(rm.aov);
+    document.getElementById('rFulfilled').textContent = fmtN(rm.fulfilled);
+    document.getElementById('rUnfulfilled').textContent = fmtN(rm.unfulfilled);
+    document.getElementById('rUnits').textContent = fmtN(rm.unitsSold);
+
+    // Wholesale
+    const w = sales.wholesale || {};
+    const wm = metrics.wholesale || {};
+    if (w.todayOrders !== undefined || wm.totalOrders !== undefined) {
+      document.getElementById('wholesaleCol').classList.remove('sales-column-disabled');
+      document.getElementById('wTodaySales').textContent = fmt(wm.sales || w.todaySales);
+      document.getElementById('wTodayOrders').textContent = fmtN(wm.totalOrders || w.todayOrders);
+      document.getElementById('wMtdSales').textContent = fmt(w.mtdSales);
+      document.getElementById('wMtdOrders').textContent = fmtN(w.mtdOrders);
+      document.getElementById('wYtdSales').textContent = fmt(w.ytdSales);
+      document.getElementById('wYtdOrders').textContent = fmtN(w.ytdOrders);
+      document.getElementById('wAOV').textContent = fmt(wm.aov);
+      document.getElementById('wFulfilled').textContent = fmtN(wm.fulfilled);
+      document.getElementById('wUnfulfilled').textContent = fmtN(wm.unfulfilled);
+      document.getElementById('wUnits').textContent = fmtN(wm.unitsSold);
+    }
+
+    updateYTDTotals(sales);
+
+    document.getElementById('lastUpdated').textContent =
+      'Updated ' + new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  } catch(e) { console.error(e); }
+}
+
+function updateYTDTotals(sales) {
+  const r = sales.retail || {};
+  const w = sales.wholesale || {};
+  const ytdRev = (r.ytdSales || 0) + (w.ytdSales || 0);
+  const ytdOrders = (r.ytdOrders || 0) + (w.ytdOrders || 0);
+  const ytdAOV = ytdOrders > 0 ? ytdRev / ytdOrders : 0;
+  document.getElementById('atCombinedRev').textContent = fmt(ytdRev);
+  document.getElementById('atCombinedOrders').textContent = fmtN(ytdOrders);
+  document.getElementById('atCombinedAOV').textContent = fmt(ytdAOV);
+}
+
+loadSales();
+setInterval(loadSales, 10*60*1000);
+
+document.getElementById('fullscreenBtn')?.addEventListener('click', () => {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+  else document.exitFullscreen();
+});
+window.addEventListener('message', e => { if (e.data?.type === 'RCO_THEME') document.body.classList.toggle('dark', e.data.theme === 'dark'); });
+window.addEventListener('message', e => { if (e.data?.type === 'TV_VIEW_STATE') document.body.classList.toggle('tv-view-active', e.data.active); });
+window.addEventListener('message', e => {
+  if (e.data?.type === 'RCO_REVENUE_ACCESS' && !e.data.canSeeRevenue) {
+    document.querySelectorAll('#rTodaySales, #rMtdSales, #rYtdSales, #rAOV, #wTodaySales, #wMtdSales, #wYtdSales, #wAOV, #atCombinedRev, #atCombinedAOV').forEach(el => {
+      el.textContent = 'Restricted';
+      el.style.fontSize = '0.7em';
+      el.style.color = '#8d8173';
+    });
+  }
+});
+</script>
+</body>
+</html>

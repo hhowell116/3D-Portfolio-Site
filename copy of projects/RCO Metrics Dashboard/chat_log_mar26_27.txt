@@ -1,0 +1,429 @@
+RCO Metrics Dashboard — Chat Log March 26-27, 2026
+====================================================
+
+SESSION START: Continued from previous session (computer froze during backfill scripts)
+
+CONTEXT FROM PREVIOUS SESSION (lastchat.txt):
+- Three backfill scripts were running: Wholesale KPI (completed), International (~Dec 2025), Orders Overview (~Apr 2025)
+- Added "Skip the Line" to product blacklist
+- Updated TV mode to cycle through all 14 dashboards
+- Centered Daily Metrics header
+- Changed international avg to weighted average (excluding top region)
+- Added responsive CSS for all new dashboards
+- Built admin panel with role-based access control
+- Changed admin panel colors to green, fixed fonts, repositioned badge
+- Fixed CORS/CPU timeout errors by switching to lightweight count APIs
+- Wired up wholesale KPI dropdown (retail/wholesale/total)
+
+====================================================
+MARCH 26, 2026 — AFTERNOON/EVENING
+====================================================
+
+1. RESUMED BACKFILL SCRIPTS
+   - International 2026: Completed (115,099 orders, 24 countries, 58 states)
+   - Orders Overview: Restarted (was still running when computer froze)
+   - Top Products: Ran fresh
+
+2. ADMIN PANEL — "CURRENTLY ACCESSING" FEATURE
+   - Added "Currently Accessing" table next to "Recent Site Access"
+   - Initially used localStorage (only local to browser)
+   - Switched to Firebase Realtime Database (but DB wasn't created yet — caused errors)
+   - Switched to Cloudflare Worker + KV with POST /presence endpoint
+   - Fixed 405 error (worker's GET-only guard was blocking POST)
+   - Fixed presence to show across all users/browsers
+
+3. ADMIN PANEL — LAYOUT FIXES
+   - Made Current Session + Access panels stretch across screen
+   - Split Recent Access and Currently Accessing side by side
+   - Stretched Current Session across full width with fields evenly spaced
+   - Removed max-width cap on admin container
+   - User Directory: removed scroll constraint, shows all users
+   - Added info icon (i) next to User Directory with tooltip (data-tooltip, not title, to avoid Chrome double tooltip)
+
+4. ADMIN PANEL — "READ ABOUT THIS SITE" FEATURE
+   - Added box next to Current Session with "View Site Overview" button
+   - Built modal overlay with blurred background
+   - Content based on presentation_notes.md
+   - Mentions Cloudflare Worker reauthentication
+   - Click outside or X to close
+
+5. ADMIN PANEL — DARK MODE FIXES
+   - Fixed hover on admin table rows (global tbody tr:hover was applying white background)
+   - Added dark mode rules for admin table hover
+
+6. ADMIN PANEL — SHARED ACCESS LOG
+   - Moved "Recent Site Access" from localStorage to Cloudflare Worker /access-log endpoint
+   - Now shows all users who've visited from any browser
+   - Added POST method allowance in worker
+
+7. ADMIN PANEL — DASHBOARD USAGE ANALYTICS
+   - Added /view-time endpoint to worker
+   - Tracks time spent on each dashboard tab
+   - "Time by Dashboard" bar chart
+   - "User × Dashboard Heatmap" table
+   - Flushes on tab switch, page close, and periodically
+   - Fixed heatmap table sizing (width: auto, compact cells)
+   - Split layout: bars on left, heatmap on right
+
+8. ORDERS OVERVIEW — DARK MODE FIXES
+   - Fixed chart-stats-sidebar (white box on right of chart) for dark mode
+   - Fixed Calendar/Chart view button active state in dark mode
+   - Root cause: CSS selectors used "body.dark .page-orders" (descendant) instead of "body.dark.page-orders" (same element)
+   - Also fixed button specificity: "body.page-orders .header button:not(.fullscreen-btn)" was overriding .view-btn.active
+
+9. ORDERS OVERVIEW — UX IMPROVEMENTS
+   - Click outside modal to close (not just X button)
+   - Calendar view now scrollable when months go past screen bottom
+   - Overrode global scrollbar-hiding rule for orders page
+   - Fixed switchView JS to use data-view attributes instead of :first-of-type selectors
+   - Chart view: fixed sidebar staying on right (JS was forcing display:block, now uses CSS classes)
+
+10. PRODUCT BLACKLIST UPDATE
+    - Added "HEAT SENSITIVE INFO CARD" and "10% off New Customer Card" to backfill_orders_overview.py blacklist
+    - Also added "heat sensitive info card" to backfill_top_products.py
+
+11. WHOLESALE DATA — FULL AUDIT & UPDATE
+    All dashboards audited for retail vs wholesale coverage:
+
+    BEFORE: Only Fulfillment KPI had wholesale (via dropdown)
+
+    UPDATED SCRIPTS (pull from both rowe-casa + wholesale-rowe-casa):
+    - backfill_international.py — added get_wholesale_token(), shop parameter
+    - backfill_orders_overview.py — added wholesale, combines both stores per month
+    - backfill_top_products.py — added wholesale for 7-day and 30-day
+
+    UPDATED WORKER LIVE ENDPOINTS:
+    - Added getWholesaleToken() and shopifyGetWholesale() functions
+    - /daily-metrics — now returns retail + wholesale objects
+    - /sales-summary — now returns retail + wholesale objects
+    - /unfulfilled — now returns retail + wholesale objects
+    - /all-time — new endpoint for all-time order counts + estimated revenue
+
+    UPDATED DASHBOARD HTML:
+    - sales.html — JS now populates wholesale column, removes disabled class
+    - daily-metrics.html — removes disabled class when wholesale data exists
+    - unfulfilled.html — JS now populates wholesale table and summary cards
+
+12. DAILY METRICS — ADDED "AVG REV / UNIT"
+    - Added to both retail and wholesale columns
+    - Fills the empty spot next to Units Sold
+    - Calculated as sales / unitsSold
+
+13. SIDEBAR — TODAY'S ORDERS
+    - Changed from Google Sheets/ShipStation data to Shopify daily-metrics endpoint
+    - Now shows retail + wholesale combined
+    - Matches Daily Metrics tab exactly
+
+14. URL DEEP LINKING
+    - Tab switches update URL hash (#sales, #fulfillment, etc.)
+    - Loading a URL with hash opens directly to that dashboard
+    - Shareable links
+
+15. SALES DASHBOARD — YTD TOTALS
+    - Initially "All-Time Totals" with retail/wholesale/combined
+    - Changed to "Year to Date Totals"
+    - Three boxes: YTD Revenue, YTD Orders, YTD Avg Order Value
+    - Uses sales-summary data (no extra API call)
+    - Moved inside sales-content grid to sit right under columns
+
+16. TIMEZONE FIX — ORDERS SHOWING 0
+    - Worker used new Date() which is UTC — after 6 PM CT it showed next day with 0 orders
+    - Added chicagoNow() helper function
+    - Updated all live endpoints: daily-metrics, sales-summary, unfulfilled, skip-the-line
+
+17. ADMIN PANEL — TOGGLE SWITCHES FOR PERMISSIONS
+    - Replaced Yes/-- text with green/gray toggle switches
+    - IT Admin toggles locked on
+    - Initially session-only, then connected to Firebase for persistence
+    - Fixed scope issue (togglePermission was in regular script, needed module scope)
+
+18. ROLE-BASED REVENUE RESTRICTION
+    - Directors, Supervisors, Employees cannot see revenue/AOV
+    - Added canSeeRevenue flag to roles.js
+    - Revenue fields show "Restricted" for those roles
+    - Broadcasts permission to iframes via postMessage
+
+19. TV MODE IMPROVEMENTS
+    - Playlist filtered by user's role (won't show unauthorized dashboards)
+    - Added CSS to make iframes fill 100vw/100vh in TV mode
+    - Dashboard containers forced to fill viewport
+
+20. GUIDED WALKTHROUGH / TOUR
+    - 14 steps covering all dashboards + features
+    - Role-aware (only shows dashboards user can access)
+    - Triggers automatically on first login (localStorage flag)
+    - "?" button in sidebar to replay
+    - Highlights target element with glowing border
+    - Tooltip positioned near target with Back/Next/Skip
+    - Dark mode styled
+
+21. SHIPPING DASHBOARD — RESPONSIVE FIX
+    - Header text overflow handled (text-overflow: ellipsis)
+    - Added height-responsive breakpoint for zoomed views
+    - Smaller fonts at max-height: 800px
+
+22. CLOUDFLARE KV LIMIT ISSUE
+    - Hit 50% warning, then exceeded 1000 writes/day limit
+    - Main culprit: presence heartbeats (every 30s = ~2880 writes/user/day)
+    - Also: view-time flushes, access-log writes
+
+    REDUCED INTERVALS:
+    - Presence: 30s → 2 min
+    - View-time flush: 60s → 5 min
+    - Presence poll in admin: 10s → 60s
+    - Sidebar order count: 5 min → 10 min
+
+23. BACKFILL RESULTS (completed during session):
+    - Top Products (retail + wholesale): 333 products 7-day, 376 products 30-day
+    - International 2024: Written to KV successfully
+    - International 2025+2026: Re-run needed (DNS failures)
+    - International 2025: Re-run completed (464,953 orders, 40 countries)
+    - International 2026: Re-run completed (121,512 orders, 24 countries)
+    - Orders Overview: Completed but April-November 2025 had 0 orders (DNS drops)
+
+    TOTAL ORDER COUNTS:
+    - Retail: 1,344,542 orders
+    - Wholesale: 49,862 orders
+    - Combined: 1,394,404 orders
+
+====================================================
+MARCH 27, 2026 — MORNING
+====================================================
+
+24. MIGRATED PRESENCE/ACCESS-LOG/VIEW-TIME TO FIREBASE REALTIME DATABASE
+    - Created Firebase RTDB at https://rco-metrics-d0f3b-default-rtdb.firebaseio.com/
+    - Moved presence tracking from KV to Firebase (onDisconnect auto-removes)
+    - Moved access log from KV to Firebase
+    - Moved view-time deltas to Firebase
+    - No more KV writes from normal site usage
+    - Presence is now truly real-time (no polling needed)
+    - Admin panel reads from Firebase with onValue listeners
+    - Re-authed Firebase (token had expired)
+
+25. PERMISSIONS PERSISTED TO FIREBASE
+    - Toggle switches now save to Firebase permissions/{role}/dashboards
+    - index.html loads permissions from Firebase on auth (overrides roles.js defaults)
+    - First load seeds Firebase with defaults from roles.js
+    - Fixed toggle handler scope (moved into module script)
+
+26. FIXED DASHBOARD ACCESS — NO MORE HARDCODED ADMIN CHECK
+    - Admin panel tab now controlled by Firebase toggles like all other tabs
+    - Removed hardcoded isAdmin() check for showing admin button
+    - All nav buttons hidden by default in CSS (display: none)
+    - Sidebar-nav hidden until permissions load (.loaded class)
+    - No flash of unauthorized dashboards on refresh
+
+27. TESTING WITH ANDREW (SUPERVISOR ROLE)
+    - Temporarily changed andrew.neidley to Supervisor for testing
+    - Verified role restrictions work (limited tabs, no admin, restricted revenue)
+    - Verified toggle persistence in Firebase
+    - Swapped back to IT Admin after testing
+
+28. SITE OVERVIEW MODAL UPDATED
+    - Mentions both Retail + Wholesale stores throughout
+    - Updated all dashboard descriptions with new features
+    - Added Site Features section (Dark Mode, TV Mode, Tour, Deep Linking)
+    - Added Admin Panel features section
+
+29. KV LIMIT — STILL BLOCKED
+    - Write limit resets at midnight UTC (6 PM CT March 27)
+    - KPI refresh for March 26-27 waiting on reset
+    - Orders overview re-run (fix missing Apr-Nov 2025) waiting on reset
+    - Fulfillment KPI stuck on March 25 until cron can write again
+
+PENDING (after KV limit resets at 6 PM CT):
+- Trigger KPI refresh for March 26-27
+- Re-run orders overview backfill (fix April-November 2025 = 0 orders)
+- Both due to DNS failures during backfill + KV write limit
+
+====================================================
+FILE STRUCTURE REFERENCE
+====================================================
+
+Key files modified this session:
+- index.html — main shell, auth, presence, view-time, tour, deep linking
+- html/admin.html — admin panel, Firebase presence/access/view-time/permissions
+- html/sales.html — wholesale data, YTD totals
+- html/daily-metrics.html — wholesale data, avg rev/unit, revenue restriction
+- html/unfulfilled.html — wholesale data
+- html/orders.html — dark mode fixes, modal close, scroll, view buttons
+- html/shipping.html — (unchanged, responsive CSS only)
+- js/roles.js — canSeeRevenue, role definitions
+- css/main.css — dark mode fixes, responsive, toggles, tour, admin layout
+- worker/src/index.js — wholesale endpoints, chicagoNow(), Firebase migration
+- scripts/backfill_international.py — retail + wholesale
+- scripts/backfill_orders_overview.py — retail + wholesale + blacklist
+- scripts/backfill_top_products.py — retail + wholesale + blacklist
+
+Firebase RTDB structure:
+- presence/{emailKey} — { email, role, since } (auto-removed on disconnect)
+- accessLog/{emailKey} — { email, role, time }
+- viewTime/deltas/{pushId} — { email, tab, seconds, ts }
+- permissions/{roleName} — { dashboards: [...], canSeeRevenue: bool }
+
+====================================================
+MARCH 28-31 + APRIL 1, 2026
+====================================================
+
+30. DAILY ORDER COUNT ACCURACY FIX
+    - Switched all live endpoints from created_at to processed_at (matches Shopify reports)
+    - Excluded cancelled orders by querying status=open + status=closed separately
+    - Filtered voided/refunded orders from sample-based calculations
+    - Endpoints updated: /daily-metrics, /sales-summary, /all-time
+    - Tested: processed_at returns ~10 fewer orders/day than created_at
+    - Cancelled orders only ~3/day (not the main discrepancy)
+    - Philip's ~100 order gap was likely from sidebar showing retail+wholesale combined vs his retail-only Shopify view
+
+31. API RESPONSE CACHING
+    - Added cachedResponse() helper to worker — caches live endpoint responses in KV for 10 minutes
+    - Endpoints cached: /daily-metrics, /sales-summary, /all-time, /unfulfilled, /skip-the-line
+    - Shopify only hit once per endpoint per 10 minutes regardless of how many users have the site open
+    - Previously: ~10k API calls/day per user. Now: ~4k calls/day total
+    - First request ~1.1s (hits Shopify), subsequent requests ~0.3s (served from cache)
+
+32. BROWSER REFRESH INTERVALS — ALL CHANGED TO 10 MINUTES
+    - daily-metrics.html: 5 min -> 10 min
+    - sales.html: 5 min -> 10 min
+    - unfulfilled.html: 5 min -> 10 min
+    - skip-the-line.html: 3 min -> 10 min
+    - fulfillment.js: 5 min -> 10 min
+    - (sidebar and top-products were already 10 min)
+
+33. FULFILLMENT KPI CRON FIX
+    - Cron was only refreshing RETAIL — hardcoded to kpi-retail-{year}
+    - Added shop parameter to fetchAllOrders() so it can fetch from either store
+    - Cron now refreshes BOTH retail and wholesale every 6 hours
+    - Uses chicagoNow() instead of UTC new Date()
+    - /kpi/refresh manual endpoint also updated to pass dataset param
+    - Manually backfilled March 2026 for both retail and wholesale to catch up (data was stuck at 3/25)
+
+34. NIGHTLY CRON — TOP PRODUCTS, ORDERS OVERVIEW, INTERNATIONAL
+    - Added second cron schedule: 0 7 * * * (2 AM CT daily)
+    - Top Products: fetches last 7+30 days orders from both stores, computes product rankings
+    - Orders Overview: refreshes current month order/fulfillment counts
+    - International: adds current month geo data to current year (incremental)
+    - wrangler.toml now has two cron triggers
+
+35. ORDERS OVERVIEW — SWITCHED FROM GOOGLE SHEETS TO WORKER API
+    - orders.html was loading from Google Sheets CSV export, not the /orders/overview endpoint
+    - Switched loadData() to fetch from worker API
+    - Added null safety (|| 0) on all field accesses to prevent crashes on incomplete data
+    - Updated error message to remove Google Sheets reference
+
+36. BACKFILL 2022-2023
+    - Orders Overview and International only had data from Jan 2024+
+    - ~441k orders existed before 2024 (115k pre-2022, 111k in 2022, 214k in 2023)
+    - Ran backfill_2022_2023.py for both Orders Overview and International
+    - 2022: 107,133 orders (retail only, wholesale didn't exist yet), 25 countries
+    - 2023: 215,993 orders (wholesale started March 2023), 38 countries
+    - Orders Overview now shows 1,281,041 total orders across 51 months (Jan 2022 - Mar 2026)
+    - International now includes 2022 and 2023 data
+    - Updated worker /intl/data "all" merge to include [2022, 2023, 2024, 2025, 2026]
+    - Updated international.html year filter to include 2022 and 2023
+
+37. ORDERS OVERVIEW BACKFILL — FULL RUN COMPLETED
+    - Ran backfill_orders_overview.py for all months (restarted after internet drop)
+    - All 27 months Jan 2024 - Mar 2026 completed with correct data
+    - Previously broken months (Apr-Nov 2025 = 0 orders) now populated
+    - KV write succeeded after previous DNS failure
+
+38. ADMIN PANEL — REMOVED DASHBOARD USAGE PANELS
+    - Removed "Dashboard Usage" bar chart (Time by Dashboard)
+    - Removed "User x Dashboard Heatmap" table
+    - Removed all JS that fetched/rendered view-time data from Firebase
+    - Removed mention from site overview modal
+    - Kept: Recent Site Access, Currently Accessing, Role Permissions, User Directory
+
+39. RECENT SITE ACCESS TABLE — SCROLL CONSTRAINT
+    - Added max-height: 130px to Recent Site Access table wrapper
+    - Shows header + 3 rows, scrollbar appears for additional entries
+
+40. FULFILLMENT DASHBOARD — NEW DASHBOARD
+    - Created html/fulfillment-dashboard.html
+    - New worker endpoint /fulfillment-dashboard (cached 10 min)
+    - Shows Retail and Wholesale side by side: Yesterday Fulfilled, Unfulfilled, Today Fulfilled
+    - 12 Shopify API calls per refresh (6 retail + 6 wholesale)
+    - Counts: unfulfilled+partial, shipped today, shipped yesterday, orders today/yesterday
+    - Layout: full viewport, floating header matching other dashboards, stacked stat boxes
+    - Unfulfilled color: brown (#8b7355), fulfilled: green (#27ae60)
+    - Dark mode and responsive CSS
+    - Added nav button "Fulfillment" in sidebar
+    - Added to admin panel permission toggles
+    - Added to all role defaults in roles.js
+
+41. MICRODERM SCRUB CUSTOMER REPORT
+    - Generated PDF report of customers who received Microderm Scrub between 3/24-3/27
+    - Pulled from both Retail and Wholesale Shopify stores
+    - 131 total orders (85 retail, 46 wholesale)
+    - Output: Microderm_Scrub_Report_3-24_to_3-27.pdf
+
+42. DATA METHODOLOGY DOCUMENT
+    - Generated RCO_Dashboard_Data_Methodology.pdf
+    - Documents every dashboard: update frequency, data source, calculations
+    - Listed in sidebar order
+    - Includes note about BambooHR API limitation for Shipping Leaderboard automation
+    - Multiple revisions for clarity and conciseness
+
+43. INTERNATIONAL — COUNTRY NAME MAPPING
+    - Added ~30 missing country codes to COUNTRY_NAMES mapping
+    - All countries in the data now show full names on hover (not abbreviations)
+    - Added: Bahrain, Bermuda, China, Colombia, Curacao, Cyprus, Algeria, Estonia, etc.
+
+44. SHIPPING LEADERBOARD — COLUMN HEADER FIX
+    - Headers were truncating with "..." when 3 boards displayed
+    - Added min-width to each column (Rank: 36px, Products: 55px, Orders: 46px, Avg: 52px)
+    - Changed table-layout from fixed to auto so min-widths are respected
+    - Full header text preserved at all zoom levels
+
+====================================================
+PENDING / KNOWN ISSUES
+====================================================
+
+- Orders Overview 2022-2023 months missing: totalItems, uniqueCustomers, avgItemsPerOrder
+  (backfill only captured order counts, not line item details — shows 0 for those fields)
+- International order count differs from Orders Overview (1.2M vs 1.28M)
+  because International only counts orders with shipping addresses
+- ~116k orders from before 2022 not backfilled
+- Nightly cron for International is incremental (additive) — may accumulate
+  slight overcounting over time; periodic full backfill recommended
+
+====================================================
+FILES MODIFIED THIS SESSION
+====================================================
+
+Worker:
+- worker/src/index.js — cached responses, processed_at fix, cron for both stores,
+  nightly backfill (top products, orders overview, international),
+  /fulfillment-dashboard endpoint, fetchAllOrders shop param
+
+HTML:
+- html/fulfillment-dashboard.html — NEW: fulfillment dashboard
+- html/daily-metrics.html — 10 min refresh
+- html/sales.html — 10 min refresh
+- html/unfulfilled.html — 10 min refresh
+- html/skip-the-line.html — 10 min refresh
+- html/orders.html — switched from Google Sheets to worker API, null safety
+- html/international.html — added 2022/2023 years, full country name mapping
+- html/shipping.html — column header fix (full names, min-widths)
+- html/admin.html — removed dashboard usage panels, added fulfillment-dashboard toggle
+- index.html — added fulfillment-dashboard nav button + iframe
+
+JS:
+- js/fulfillment.js — 10 min refresh
+- js/roles.js — added fulfillment-dashboard to all role defaults
+
+CSS:
+- css/main.css — recent access scroll constraint, shipping column fixes
+
+Config:
+- worker/wrangler.toml — added nightly cron (0 7 * * *)
+
+Scripts:
+- scripts/backfill_2022_2023.py — NEW: backfill orders overview + international for 2022-2023
+- scripts/microderm_report_pdf.py — NEW: microderm scrub customer report generator
+- scripts/generate_data_methodology.py — NEW: data methodology PDF generator
+
+Generated Files:
+- Microderm_Scrub_Report_3-24_to_3-27.pdf
+- RCO_Dashboard_Data_Methodology_v2.pdf
+- microderm_report_3_24_to_3_27.txt

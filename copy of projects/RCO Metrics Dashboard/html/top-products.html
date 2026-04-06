@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Top Products - RCO</title>
+<link rel="stylesheet" href="../css/main.css">
+</head>
+<body class="page-top-products">
+<div class="tp-container">
+  <div class="tp-header">
+    <h1>Top Selling Products</h1>
+    <div class="tp-meta" id="lastUpdated">Loading...</div>
+    <button class="fullscreen-btn" id="fullscreenBtn" title="Fullscreen" aria-label="Fullscreen">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M9 4H4v5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 4h5v5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 20H4v-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 20h5v-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+
+  <div class="tp-content">
+    <div class="tp-column">
+      <div class="tp-col-title">Last 7 Days</div>
+      <div class="tp-list" id="list7"><div class="tp-empty">Loading...</div></div>
+    </div>
+
+    <div class="tp-column">
+      <div class="tp-col-title">Last 30 Days</div>
+      <div class="tp-list" id="list30"><div class="tp-empty">Loading...</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_BASE = "https://rco-metrics.hayden-howell.workers.dev";
+
+async function load() {
+  try {
+    const res = await fetch(`${API_BASE}/top-products`);
+    const d = await res.json();
+    ['7','30'].forEach(period => {
+      const list = document.getElementById(`list${period}`);
+      const products = d[`last${period}Days`] || [];
+      if (products.length) {
+        list.innerHTML = products.map((p,i) => `
+          <div class="tp-row${i % 2 === 1 ? ' tp-even' : ''}">
+            <span class="tp-rank">${i+1}</span>
+            <span class="tp-name">${p.name}</span>
+            <span class="tp-qty">${p.qty.toLocaleString()}</span>
+          </div>
+        `).join('');
+      }
+    });
+    document.getElementById('lastUpdated').textContent = 'Updated ' + new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  } catch(e) { console.error(e); }
+}
+load();
+setInterval(load, 10*60*1000);
+
+document.getElementById('fullscreenBtn')?.addEventListener('click', () => { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); });
+window.addEventListener('message', e => { if (e.data?.type === 'RCO_THEME') document.body.classList.toggle('dark', e.data.theme === 'dark'); });
+window.addEventListener('message', e => { if (e.data?.type === 'TV_VIEW_STATE') document.body.classList.toggle('tv-view-active', e.data.active); });
+</script>
+</body>
+</html>

@@ -1,0 +1,117 @@
+RCO Metrics Dashboard — Chat Log April 3, 2026
+====================================================
+
+SESSION START: Michael reported dashboard showing ~$4K more revenue than Shopify Analytics
+
+====================================================
+APRIL 3, 2026
+====================================================
+
+1. REVENUE DISCREPANCY INVESTIGATION
+   - Michael reported dashboard retail sales ~$4K higher than Shopify Analytics
+   - Screenshots: Shopify showed $47K / 588 orders, Dashboard showed $50,975 / 578 orders
+   - Dashboard had FEWER orders but MORE revenue — ruled out date bleed issue
+
+2. ROOT CAUSE: SAMPLE-BASED REVENUE EXTRAPOLATION
+   - /daily-metrics fetched only 250 orders, summed revenue, multiplied by (totalOrders / 250)
+   - Scale factor of ~2.3x amplified any sample bias — high-value orders in the sample inflated total
+   - /sales-summary was even worse: only 50 orders sampled, then AOV * orderCount
+
+3. FIX: PAGINATED FULL ORDER FETCH
+   - Added fetchAllOrdersPaginated() helper function
+   - Uses cursor-based pagination (Link header) to fetch ALL orders, not a sample
+   - For ~600 orders/day, this is 3 pages of 250 = 3 API calls per store
+   - Replaced sampling in /daily-metrics and /sales-summary with full fetch
+   - Revenue, units, and top products now computed from ALL orders — exact, not estimated
+
+4. UNFULFILLED ENDPOINT — ALSO FIXED
+   - /unfulfilled had same sampling issue (limit=250, then scaled units)
+   - Now paginates all unfulfilled orders for exact unit counts and date breakdown
+
+5. DATE-STAMPED CACHE KEYS
+   - Old keys: "cache:daily-metrics", "cache:sales-summary" (static)
+   - New keys: "cache:daily-metrics:2026-04-03" (includes date)
+   - Cache auto-invalidates at midnight CT instead of potentially serving stale previous-day data
+
+6. REMAINING ~$250 GAP INVESTIGATION
+   - After full fetch fix, dashboard was still ~$250 higher than Shopify Analytics
+   - Built temporary /test-refunds endpoint to diagnose
+   - Researched Shopify Analytics "Total sales" formula vs API total_price field
+
+7. THREE CAUSES OF SMALL DISCREPANCY IDENTIFIED
+   a. Gift card PURCHASES excluded from Shopify Analytics (liability until spent)
+      - li.gift_card === true on line items identifies gift card products
+      - Payments MADE WITH gift cards still count as sales (no change needed)
+   b. Cross-day refunds: Shopify Analytics deducts refunds processed today on older orders
+      - Refund attributed to refund date, not original order date
+      - Dashboard only sees today's orders, misses refunds on past orders
+   c. total_price never updates after refunds (current_total_price does)
+      - Tested: no partial refunds on today's orders, so no impact this day
+
+8. FIX: GIFT CARD AND CROSS-DAY REFUND ADJUSTMENTS
+   - Added fetchCrossDayRefunds() helper function
+     - Fetches partially_refunded + refunded orders updated today
+     - Sums refund amounts on orders NOT placed today
+   - Updated computeMetrics in /daily-metrics:
+     - Subtracts gift card line item revenue from sales
+     - Subtracts cross-day refund amounts
+     - Excludes gift-card-only orders from order count
+   - Updated computeSales in /sales-summary: same adjustments
+   - Applied to BOTH retail and wholesale stores
+   - After fix: dashboard matched Shopify Analytics within a few dollars
+
+9. VERIFIED DATA ACCURACY ACROSS ALL DASHBOARDS
+   - Cross-checked all endpoints for consistency:
+     - Daily Metrics sales = Sales Summary today's sales (MATCH)
+     - Daily Metrics orders = Sales Summary today's orders (MATCH)
+     - AOV = sales / orders (MATCH)
+     - Fulfilled + Unfulfilled = totalOrders (MATCH)
+     - Unfulfilled endpoint total = Fulfillment Dashboard unfulfilled (MATCH)
+   - Confirmed frontends display raw API values with no client-side manipulation
+   - Full audit table of all dashboards: exact vs estimated
+
+10. DASHBOARD DATA SOURCE AUDIT RESULTS
+    - EXACT: Daily Metrics, Sales Today, Unfulfilled, Fulfillment Dashboard,
+      Skip the Line, Fulfillment KPI, Orders Overview, Top Products,
+      International, Shipping Leaderboard, Sidebar order count
+    - ESTIMATED: Sales MTD/YTD (today's AOV * count — stable with 600+ order sample),
+      All-Time Stats (50-order sample * 1.3M total — intentionally labeled "est")
+
+11. ROLE CHANGES
+    - Added michael@rowecasaorganics.com as C-Suite
+    - Added jennifer.stewart@rowecasaorganics.com as Supervisor
+
+====================================================
+PENDING / KNOWN ISSUES
+====================================================
+
+- Sales MTD/YTD still estimated (AOV * count) — fetching all month/year orders
+  would hit Shopify rate limits (~72+ pages for MTD, ~700+ for YTD)
+- All-Time Stats intentionally estimated — 1.3M+ orders cannot be fetched live
+- Dashboard may differ from Shopify Analytics by a few dollars due to:
+  - Custom refund amounts (flat $ not tied to line items) not captured
+  - Shipping-only refunds on older orders not captured
+  - Pending orders that clear/drop between cache refreshes
+  - 10-minute cache staleness
+  - Shopify Analytics overview card rounds to nearest $100
+
+====================================================
+FILES MODIFIED THIS SESSION
+====================================================
+
+Worker:
+- worker/src/index.js — fetchAllOrdersPaginated() helper, fetchCrossDayRefunds() helper,
+  /daily-metrics rewritten (full order fetch, gift card exclusion, cross-day refund deduction,
+  date-stamped cache key), /sales-summary rewritten (same adjustments),
+  /unfulfilled rewritten (full paginated fetch), removed test-refunds endpoint
+
+JS:
+- js/roles.js — added michael@ to C-Suite, jennifer.stewart@ to Supervisor
+
+====================================================
+DEPLOYMENT HISTORY
+====================================================
+
+- Cloudflare Worker deployed 6 times during session (iterative fixes + testing)
+- Firebase Hosting deployed 2 times (role changes)
+- Final worker version: 1a6694d5-8273-44dc-8467-cba6e4beef02

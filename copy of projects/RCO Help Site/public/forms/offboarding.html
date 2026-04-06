@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <title>User Offboarding Request — RCO IT</title>
+  <link rel="stylesheet" href="../css/styles.css"/>
+  <style>
+    :root { --sb-muted: #6a5e57; }
+    html  { font-size: 18px; letter-spacing: 0.01em; }
+    .portal-email-btn {
+      display: block; width: 100%; background: none; border: 1px solid var(--sb-border);
+      border-radius: 8px; padding: 0.4rem 0.6rem; font-size: 0.67rem; color: var(--sb-muted);
+      font-family: inherit; font-weight: 600; cursor: pointer; text-align: center;
+      transition: all 0.18s; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .portal-email-btn:hover { background: var(--brand-soft); border-color: var(--brand-hover-border); color: var(--brand-brown); }
+    .form-wrap { max-width: 640px; }
+    .form-section { margin-bottom: 2rem; }
+    .form-section-title {
+      font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.07em;
+      color: var(--sb-muted); margin-bottom: 0.9rem; padding-bottom: 0.45rem; border-bottom: 1px solid var(--sb-sep);
+    }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.9rem; }
+    .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.9rem; }
+    @media(max-width:560px){ .form-grid, .form-grid-3 { grid-template-columns: 1fr; } }
+    .span2 { grid-column: 1 / -1; }
+    .field { display: flex; flex-direction: column; gap: 0.32rem; }
+    .field label { font-size: 0.84rem; font-weight: 700; color: var(--sb-text); }
+    .field-note  { font-size: 0.73rem; font-weight: 500; color: var(--sb-muted); }
+    .req { color: #c0392b; }
+    .field input, .field select, .field textarea {
+      background: var(--sidebar-bg); border: 1.5px solid var(--sb-border); border-radius: 9px;
+      padding: 0.6rem 0.85rem; font-size: 0.9rem; font-family: inherit; color: var(--sb-text);
+      outline: none; transition: border-color 0.15s, box-shadow 0.15s; width: 100%;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus {
+      border-color: var(--brand-hover-border); box-shadow: 0 0 0 3px rgba(189,153,121,0.15);
+    }
+    .field textarea { resize: vertical; }
+    .pill-group { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+    .pill-btn {
+      padding: 0.38rem 1rem; border-radius: 999px;
+      border: 1.5px solid var(--sb-border); background: var(--panel-bg);
+      color: var(--sb-text); font-size: 0.85rem; font-weight: 600;
+      font-family: inherit; cursor: pointer; transition: all 0.15s;
+    }
+    .pill-btn:hover    { border-color: var(--brand-hover-border); color: var(--brand-brown); }
+    .pill-btn.selected { background: var(--brand-grad); border-color: var(--brand-brown); color: #fff; }
+    .check-group { display: flex; flex-wrap: nowrap; gap: 0.45rem; align-items: center; }
+    .check-item {
+      display: flex; align-items: center; gap: 0.4rem;
+      font-size: 0.84rem; color: var(--sb-text); font-weight: 500;
+      background: var(--sidebar-bg); border: 1.5px solid var(--sb-border);
+      border-radius: 8px; padding: 0.35rem 0.75rem; cursor: pointer;
+      transition: border-color 0.15s; user-select: none; white-space: nowrap;
+    }
+    .check-item:hover { border-color: var(--brand-hover-border); }
+    .check-item input[type="checkbox"] { accent-color: var(--brand-brown); cursor: pointer; }
+    .inline-sub {
+      display: none; align-items: center; gap: 0.35rem;
+      margin-left: 0.15rem;
+    }
+    .inline-sub.show { display: flex; }
+    .inline-sub .pill-btn {
+      padding: 0.32rem 0.85rem; font-size: 0.8rem;
+      background: rgba(189,153,121,0.1); border-color: var(--brand-hover-border);
+    }
+    .inline-sub .pill-btn:hover { background: rgba(189,153,121,0.2); }
+    .inline-sub .pill-btn.selected { background: var(--brand-grad); border-color: var(--brand-brown); color: #fff; }
+    .conditional { display: none; margin-top: 0.55rem; }
+    .conditional.show { display: block; }
+    .form-footer { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; padding-top: 1.25rem; border-top: 1px solid var(--sb-sep); }
+    .form-status { font-size: 0.84rem; font-weight: 600; padding: 0.55rem 0.9rem; border-radius: 9px; display: none; }
+    .form-status.error   { display: block; background: rgba(220,80,60,0.1); color: #c0392b; border: 1px solid rgba(220,80,60,0.2); }
+    .form-status.success { display: block; background: var(--success-soft); color: var(--success); border: 1px solid rgba(46,204,138,0.25); }
+    .success-screen { display: none; text-align: center; padding: 4rem 2rem; }
+    .success-screen.show { display: block; }
+    .success-screen .s-icon { font-size: 3.5rem; margin-bottom: 1rem; }
+    .success-screen h2 { font-size: 1.3rem; font-weight: 800; color: var(--sb-text); margin-bottom: 0.5rem; }
+    .success-screen p  { font-size: 0.9rem; color: var(--sb-muted); line-height: 1.7; margin-bottom: 1.5rem; }
+    .skip-note {
+      background: var(--sidebar-bg); border: 1.5px solid var(--sb-border);
+      border-radius: 11px; padding: 0.75rem 1.1rem; margin-bottom: 1.75rem;
+      font-size: 0.84rem; color: var(--sb-muted); line-height: 1.55;
+    }
+    .skip-note strong { color: var(--sb-text); }
+    .sub-check-inline {
+      display: none; align-items: center; gap: 0.35rem;
+      margin-left: 0.15rem;
+    }
+    .sub-check-inline.show { display: flex; }
+    .sub-check-inline .check-item {
+      background: rgba(189,153,121,0.1); border-color: var(--brand-hover-border);
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+
+  <aside class="sidebar">
+    <div class="sidebar-logo-wrap">
+      <img src="../assets/logo.png" alt="Rowe Casa Organics" class="sidebar-logo"/>
+    </div>
+    <div class="sidebar-divider"></div>
+    <nav class="sidebar-nav">
+      <button class="nav-btn" onclick="window.location.href='../index.html'">
+        <span class="nav-icon"></span> Portal Home
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-divider" style="margin-bottom:0.75rem"></div>
+      <button class="contact-btn" onclick="window.location.href='../index.html'">← Back to Portal</button>
+      <button class="portal-email-btn"
+              onclick="window.open('https://mail.google.com/mail/?view=cm&fs=1&to=itsupport%40rowecasaorganics.com','_blank')">
+        ✉️ itsupport@rowecasaorganics.com
+      </button>
+    </div>
+  </aside>
+
+  <div class="main-wrap">
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="topbar-title">User Offboarding Request</div>
+        <div class="topbar-desc">Capture what IT needs to complete a clean separation for a departing employee.</div>
+      </div>
+      <div class="topbar-right">
+        <span class="topbar-user" id="topbarUser">Not signed in</span>
+        <button class="sign-btn" id="authBtn">Sign Out</button>
+      </div>
+    </header>
+
+    <main class="content-panel">
+
+      <div class="success-screen" id="successScreen">
+        <div class="s-icon">✅</div>
+        <h2>Request Submitted!</h2>
+        <p>IT will begin the offboarding process based on the details provided.<br/>
+           You can view your submission in the <strong>Completed</strong> tab on the portal.</p>
+        <button class="card-action" onclick="window.location.href='../index.html'">← Back to Portal</button>
+      </div>
+
+      <div class="form-wrap" id="formWrap">
+
+        <div class="skip-note">
+          💡 <strong>Fill in what you know!</strong> — IT will follow up on anything that's missing.
+        </div>
+
+        <!-- ── Section 1: Departing Employee ── -->
+        <div class="form-section">
+          <div class="form-section-title">Departing Employee</div>
+          <div class="form-grid">
+            <div class="field">
+              <label>Full Name <span class="req">*</span></label>
+              <input type="text" id="off_name" placeholder="First Last"/>
+            </div>
+            <div class="field">
+              <label>Department</label>
+              <select id="off_dept">
+                <option value="">— Select —</option>
+                <option>Administration</option><option>Brand Experience</option>
+                <option>Curing</option><option>Customer Care</option>
+                <option>Customer Service</option><option>Facilities and Maintenance</option>
+                <option>Finance</option><option>Human Resources</option>
+                <option>Information Technology</option><option>Inventory</option>
+                <option>Kitchen</option><option>Labeling</option>
+                <option>Marketing</option><option>Operations</option>
+                <option>Procurement</option><option>Production</option>
+                <option>Project Management</option><option>Quality Control</option>
+                <option>Research &amp; Development</option><option>Shipping</option>
+                <option>Social Media</option><option>Strategy</option>
+                <option>Wholesale</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Section 2: Access & Accounts ── -->
+        <div class="form-section">
+          <div class="form-section-title">Access &amp; Accounts</div>
+          <div class="form-grid">
+
+            <div class="field span2">
+              <label>When should all access be revoked?</label>
+              <div class="pill-group">
+                <button type="button" class="pill-btn" onclick="setPill('off_revoke',this,'Immediately')">Immediately</button>
+                <button type="button" class="pill-btn" onclick="setPill('off_revoke',this,'End of Last Day')">End of Last Day</button>
+                <button type="button" class="pill-btn" onclick="setPill('off_revoke',this,'Custom Date')">Custom Date</button>
+              </div>
+              <input type="hidden" id="off_revoke"/>
+              <div class="conditional" id="off-revoke-date">
+                <input type="date" id="off_revoke_date"/>
+              </div>
+            </div>
+
+            <div class="field span2">
+              <label>Did the employee return their PDK access card?</label>
+              <div class="pill-group">
+                <button type="button" class="pill-btn" onclick="setPill('off_pdk',this,'Yes')">Yes</button>
+                <button type="button" class="pill-btn" onclick="setPill('off_pdk',this,'No')">No</button>
+                <button type="button" class="pill-btn" onclick="setPill('off_pdk',this,'Not Sure')">Not Sure</button>
+              </div>
+              <input type="hidden" id="off_pdk"/>
+            </div>
+
+            <div class="field span2">
+              <label>Did the employee have a company email?</label>
+              <div class="check-group">
+                <label class="check-item">
+                  <input type="checkbox" id="cb_had_email" onchange="toggleEmailOptions()"/> Yes — they had a Google Workspace account
+                </label>
+              </div>
+              <div class="conditional" id="emailOptionsWrap">
+                <div style="display:flex;flex-direction:column;gap:0.65rem;margin-top:0.35rem">
+                  <div class="field">
+                    <label>Forward their email to <span class="field-note">(optional)</span></label>
+                    <input type="text" id="off_fwd_to" placeholder="Name or email of person to forward to"/>
+                  </div>
+                  <div class="field">
+                    <label>Transfer Google Drive files to <span class="field-note">(optional)</span></label>
+                    <input type="text" id="off_drive_to" placeholder="Name or email — usually their supervisor"/>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="field span2">
+              <label>Any known software licenses to revoke? <span class="field-note">(optional)</span></label>
+              <textarea id="off_licenses" rows="2" placeholder="e.g. Shopify, Adobe, ShipStation, Canva — list what you know"></textarea>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ── Section 3: Equipment Return ── -->
+        <div class="form-section">
+          <div class="form-section-title">Equipment Return</div>
+          <div class="form-grid">
+
+            <div class="field span2">
+              <label>Did the employee have a company laptop?</label>
+              <div class="check-group">
+                <label class="check-item">
+                  <input type="checkbox" id="cb_had_laptop" onchange="toggleLaptopOptions()"/> Yes — they had a company laptop
+                </label>
+                <div class="inline-sub" id="laptopTypeWrap">
+                  <button type="button" class="pill-btn" onclick="setPill('off_laptop_type',this,'Windows')">Windows</button>
+                  <button type="button" class="pill-btn" onclick="setPill('off_laptop_type',this,'Mac')">Mac</button>
+                  <button type="button" class="pill-btn" onclick="setPill('off_laptop_type',this,'Not Sure')">Not Sure</button>
+                  <input type="hidden" id="off_laptop_type"/>
+                </div>
+              </div>
+              <div class="conditional" id="laptopReturnWrap">
+                <div class="field" style="margin-top:0.35rem">
+                  <label>Laptop return details <span class="field-note">(optional — location, who's coordinating, etc.)</span></label>
+                  <input type="text" id="off_laptop_return" placeholder="e.g. Employee will drop off at front desk on last day"/>
+                </div>
+              </div>
+            </div>
+
+            <div class="field span2">
+              <label>Any other equipment to return? <span class="field-note">(optional)</span></label>
+              <input type="text" id="off_other_equip_details" placeholder="e.g. Phone, monitor, charger, cables"/>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ── Section 4: Notes ── -->
+        <div class="form-section" style="margin-bottom:0.5rem">
+          <div class="form-grid">
+            <div class="field span2">
+              <label>Additional Notes <span class="field-note">(optional)</span></label>
+              <textarea id="off_notes" rows="2" placeholder="Anything else IT should know about this offboarding"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-footer">
+          <button class="card-action" id="submitBtn" onclick="submitForm()">Submit Request →</button>
+          <button class="clear-btn" onclick="window.location.href='../index.html'">Cancel</button>
+          <div id="formStatus" class="form-status"></div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp, getApps, getApp }                    from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+  import { getAuth, onAuthStateChanged, signOut }              from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+  import { getFirestore, collection, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+  var cfg = { apiKey:'AIzaSyD-mpyReAsJW3dUiWQhFlFeIvUYj_Iju-E', authDomain:'it-help-site.firebaseapp.com', databaseURL:'https://it-help-site-default-rtdb.firebaseio.com', projectId:'it-help-site', storageBucket:'it-help-site.firebasestorage.app', messagingSenderId:'742349139773', appId:'1:742349139773:web:3780ad352a9a7e00f55f54' };
+  var fbApp = getApps().length ? getApp() : initializeApp(cfg);
+  var auth  = getAuth(fbApp);
+  var db    = getFirestore(fbApp);
+
+  onAuthStateChanged(auth, function(user) {
+    if (!user || !user.email.endsWith('@rowecasaorganics.com')) {
+      signOut(auth).finally(function() { window.location.replace('../login.html'); });
+      return;
+    }
+    window._currentUser = user;
+    var el = document.getElementById('topbarUser');
+    if (el) el.textContent = user.email;
+  });
+
+  document.getElementById('authBtn')?.addEventListener('click', function() {
+    signOut(auth).then(function() { window.location.replace('../login.html'); });
+  });
+
+  window.submitForm = async function() {
+    var btn      = document.getElementById('submitBtn');
+    var statusEl = document.getElementById('formStatus');
+
+    var name    = document.getElementById('off_name').value.trim();
+    var missing = [];
+    if (!name) missing.push('Full name');
+    if (missing.length) {
+      statusEl.textContent = '⚠️ Please fill in: ' + missing.join(', ') + '.';
+      statusEl.className = 'form-status error'; return;
+    }
+
+    var hadEmail  = document.getElementById('cb_had_email').checked;
+    var hadLaptop = document.getElementById('cb_had_laptop').checked;
+
+    btn.textContent = 'Submitting…'; btn.disabled = true;
+    statusEl.className = 'form-status';
+
+    var revokeVal = document.getElementById('off_revoke').value;
+    if (revokeVal === 'Custom Date') {
+      var rd = document.getElementById('off_revoke_date').value;
+      if (rd) revokeVal = 'Custom: ' + rd;
+    }
+
+    var payload = {
+      employee_name:       name,
+      department:          document.getElementById('off_dept').value,
+      revoke_access:       revokeVal,
+      pdk_card:            document.getElementById('off_pdk').value,
+      had_email:           hadEmail ? 'Yes' : 'No',
+      email_forward_to:    hadEmail ? document.getElementById('off_fwd_to').value.trim() : '',
+      drive_transfer_to:   hadEmail ? document.getElementById('off_drive_to').value.trim() : '',
+      licenses_to_revoke:  document.getElementById('off_licenses').value.trim(),
+      had_laptop:          hadLaptop ? 'Yes' : 'No',
+      laptop_type:         hadLaptop ? document.getElementById('off_laptop_type').value : '',
+      laptop_return_notes: hadLaptop ? document.getElementById('off_laptop_return').value.trim() : '',
+      other_equipment:     document.getElementById('off_other_equip_details').value.trim(),
+      notes:               document.getElementById('off_notes').value.trim(),
+      submitted_by:        window._currentUser?.email || '',
+      submitted_at:        new Date().toISOString()
+    };
+
+    // Post to Google Sheet (fire-and-forget)
+    var endpoint = 'https://script.google.com/macros/s/AKfycbwDsmHdnzVp1lfkhyU1k1mBWYCbsae4ENlAqrTJ2_trLFZ7nA4kkUIUp0ExD_QmlimqQA/exec';
+    fetch(endpoint, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) }).catch(function(e){ console.warn('Sheet post failed:', e); });
+
+    try {
+      await addDoc(collection(db, 'submissions'), {
+        title:       'User Offboarding Request',
+        dept:        document.getElementById('off_dept').value,
+        url:         'forms/offboarding.html',
+        uid:         window._currentUser.uid,
+        userEmail:   window._currentUser.email,
+        submittedAt: serverTimestamp(),
+        formData:    payload
+      });
+      document.getElementById('formWrap').style.display = 'none';
+      document.getElementById('successScreen').classList.add('show');
+    } catch(e) {
+      console.error(e);
+      statusEl.textContent = '❌ Submission failed. Please try again or email itsupport@rowecasaorganics.com.';
+      statusEl.className = 'form-status error';
+      btn.textContent = 'Submit Request →'; btn.disabled = false;
+    }
+  };
+</script>
+
+<script>
+  function setPill(hiddenId, btn, val) {
+    btn.closest('.pill-group, .inline-sub').querySelectorAll('.pill-btn').forEach(function(b) { b.classList.remove('selected'); });
+    btn.classList.add('selected');
+    document.getElementById(hiddenId).value = val;
+    // Show custom date field if needed
+    if (hiddenId === 'off_revoke') {
+      toggle('off-revoke-date', val === 'Custom Date');
+    }
+  }
+  function toggle(id, show) {
+    var el = document.getElementById(id);
+    if (el) el.classList.toggle('show', show);
+  }
+  function toggleEmailOptions() {
+    var cb = document.getElementById('cb_had_email');
+    toggle('emailOptionsWrap', cb.checked);
+    if (!cb.checked) {
+      document.getElementById('off_fwd_to').value = '';
+      document.getElementById('off_drive_to').value = '';
+    }
+  }
+  function toggleLaptopOptions() {
+    var cb = document.getElementById('cb_had_laptop');
+    var wrap = document.getElementById('laptopTypeWrap');
+    if (cb.checked) {
+      wrap.classList.add('show');
+      toggle('laptopReturnWrap', true);
+    } else {
+      wrap.classList.remove('show');
+      toggle('laptopReturnWrap', false);
+      document.getElementById('off_laptop_type').value = '';
+      document.getElementById('off_laptop_return').value = '';
+      wrap.querySelectorAll('.pill-btn').forEach(function(b) { b.classList.remove('selected'); });
+    }
+  }
+</script>
+</body>
+</html>

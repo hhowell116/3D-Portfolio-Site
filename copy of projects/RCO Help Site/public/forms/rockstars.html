@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <title>RCO Rockstars — RCO IT</title>
+  <link rel="stylesheet" href="../css/styles.css"/>
+  <style>
+    :root { --sb-muted: #6a5e57; }
+    html  { font-size: 18px; letter-spacing: 0.01em; }
+    .portal-email-btn {
+      display: block; width: 100%; background: none; border: 1px solid var(--sb-border);
+      border-radius: 8px; padding: 0.4rem 0.6rem; font-size: 0.67rem; color: var(--sb-muted);
+      font-family: inherit; font-weight: 600; cursor: pointer; text-align: center;
+      transition: all 0.18s; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .portal-email-btn:hover { background: var(--brand-soft); border-color: var(--brand-hover-border); color: var(--brand-brown); }
+    .form-wrap { max-width: 720px; }
+    .form-section { margin-bottom: 2rem; }
+    .form-section-title {
+      font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.07em;
+      color: var(--sb-muted); margin-bottom: 0.9rem; padding-bottom: 0.45rem; border-bottom: 1px solid var(--sb-sep);
+    }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.9rem; }
+    @media(max-width:560px){ .form-grid { grid-template-columns: 1fr; } }
+    .span2 { grid-column: 1 / -1; }
+    .field { display: flex; flex-direction: column; gap: 0.32rem; }
+    .field label { font-size: 0.84rem; font-weight: 700; color: var(--sb-text); }
+    .field-note  { font-size: 0.73rem; font-weight: 500; color: var(--sb-muted); }
+    .req { color: #c0392b; }
+    .field input, .field select, .field textarea {
+      background: var(--sidebar-bg); border: 1.5px solid var(--sb-border); border-radius: 9px;
+      padding: 0.6rem 0.85rem; font-size: 0.9rem; font-family: inherit; color: var(--sb-text);
+      outline: none; transition: border-color 0.15s, box-shadow 0.15s; width: 100%;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus {
+      border-color: var(--brand-hover-border); box-shadow: 0 0 0 3px rgba(189,153,121,0.15);
+    }
+    .field textarea { resize: vertical; }
+    .form-footer { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; padding-top: 1.25rem; border-top: 1px solid var(--sb-sep); }
+    .form-status { font-size: 0.84rem; font-weight: 600; padding: 0.55rem 0.9rem; border-radius: 9px; display: none; }
+    .form-status.error   { display: block; background: rgba(220,80,60,0.1); color: #c0392b; border: 1px solid rgba(220,80,60,0.2); }
+    .form-status.success { display: block; background: var(--success-soft); color: var(--success); border: 1px solid rgba(46,204,138,0.25); }
+    .success-screen { display: none; text-align: center; padding: 4rem 2rem; }
+    .success-screen.show { display: block; }
+    .success-screen .s-icon { font-size: 3.5rem; margin-bottom: 1rem; }
+    .success-screen h2 { font-size: 1.3rem; font-weight: 800; color: var(--sb-text); margin-bottom: 0.5rem; }
+    .success-screen p  { font-size: 0.9rem; color: var(--sb-muted); line-height: 1.7; margin-bottom: 1.5rem; }
+
+    /* Rockstar-specific styles */
+    .rockstar-card {
+      background: var(--sidebar-bg);
+      border: 1.5px solid var(--sb-border);
+      border-radius: 14px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+      position: relative;
+      transition: border-color 0.18s, box-shadow 0.18s;
+    }
+    .rockstar-card:hover {
+      border-color: var(--brand-hover-border);
+      box-shadow: 0 4px 16px rgba(95,75,60,0.1);
+    }
+    .rockstar-card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 1rem; padding-bottom: 0.65rem;
+      border-bottom: 1px solid var(--sb-sep);
+    }
+    .rockstar-card-num {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--brand-grad); color: #fff;
+      font-size: 0.8rem; font-weight: 800; flex-shrink: 0;
+    }
+    .rockstar-card-title {
+      font-size: 0.92rem; font-weight: 700; color: var(--sb-text);
+      margin-left: 0.65rem; flex: 1;
+    }
+    .remove-rockstar-btn {
+      background: none; border: none; color: var(--sb-muted);
+      font-size: 1rem; cursor: pointer; padding: 0.2rem 0.4rem;
+      border-radius: 6px; transition: all 0.15s;
+    }
+    .remove-rockstar-btn:hover { color: #c0392b; background: rgba(220,80,60,0.08); }
+    .rockstar-fields { display: flex; flex-direction: column; gap: 0.85rem; }
+    .rockstar-fields .field input,
+    .rockstar-fields .field textarea {
+      background: var(--panel-bg);
+    }
+
+    /* Photo upload area */
+    .photo-drop-zone {
+      border: 2px dashed var(--sb-border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.18s;
+      background: var(--panel-bg);
+      position: relative;
+      min-height: 120px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+    .photo-drop-zone:hover,
+    .photo-drop-zone.drag-over {
+      border-color: var(--brand-hover-border);
+      background: rgba(189,153,121,0.06);
+    }
+    .photo-drop-zone.has-image {
+      border-style: solid;
+      border-color: var(--success);
+      padding: 0.5rem;
+    }
+    .photo-drop-icon { font-size: 2rem; color: var(--sb-muted); }
+    .photo-drop-text { font-size: 0.82rem; color: var(--sb-muted); font-weight: 600; }
+    .photo-drop-hint { font-size: 0.72rem; color: var(--sb-muted); }
+    .photo-preview {
+      max-width: 200px; max-height: 200px;
+      border-radius: 10px; object-fit: cover;
+    }
+    .photo-remove-btn {
+      position: absolute; top: 6px; right: 6px;
+      background: rgba(0,0,0,0.55); color: #fff; border: none;
+      width: 26px; height: 26px; border-radius: 50%;
+      font-size: 0.8rem; cursor: pointer; display: none;
+      align-items: center; justify-content: center;
+      transition: background 0.15s;
+    }
+    .photo-remove-btn:hover { background: #c0392b; }
+    .photo-drop-zone.has-image .photo-remove-btn { display: flex; }
+    .photo-drop-zone.has-image .photo-drop-icon,
+    .photo-drop-zone.has-image .photo-drop-text,
+    .photo-drop-zone.has-image .photo-drop-hint { display: none; }
+    .photo-file-input { display: none; }
+
+    #rockstarsList:empty::after {
+      content: 'Select a month and enter the number of rockstars above to get started.';
+      display: block; text-align: center; padding: 2rem;
+      color: var(--sb-muted); font-size: 0.88rem; font-style: italic;
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+
+  <aside class="sidebar">
+    <div class="sidebar-logo-wrap">
+      <img src="../assets/logo.png" alt="Rowe Casa Organics" class="sidebar-logo"/>
+    </div>
+    <div class="sidebar-divider"></div>
+    <nav class="sidebar-nav">
+      <button class="nav-btn" onclick="window.location.href='../index.html'">
+        <span class="nav-icon"></span> Portal Home
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-divider" style="margin-bottom:0.75rem"></div>
+      <button class="contact-btn" onclick="window.location.href='../index.html'">← Back to Portal</button>
+      <button class="portal-email-btn"
+              onclick="window.open('https://mail.google.com/mail/?view=cm&fs=1&to=itsupport%40rowecasaorganics.com','_blank')">
+        ✉️ itsupport@rowecasaorganics.com
+      </button>
+    </div>
+  </aside>
+
+  <div class="main-wrap">
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="topbar-title">RCO Rockstars</div>
+        <div class="topbar-desc">Nominate this month's rockstars — the people who went above and beyond.</div>
+      </div>
+      <div class="topbar-right">
+        <span class="topbar-user" id="topbarUser">Not signed in</span>
+        <button class="sign-btn" id="authBtn">Sign Out</button>
+      </div>
+    </header>
+
+    <main class="content-panel">
+
+      <!-- Success screen -->
+      <div class="success-screen" id="successScreen">
+        <div class="s-icon">🌟</div>
+        <h2>Rockstars Submitted!</h2>
+        <p>Your rockstar nominations have been saved. Thank you for recognizing your team!<br/>
+           You can view your submission in the <strong>Completed</strong> tab on the portal.</p>
+        <button class="card-action" onclick="window.location.href='../index.html'">← Back to Portal</button>
+      </div>
+
+      <!-- Form -->
+      <div class="form-wrap" id="formWrap">
+
+        <div class="form-section">
+          <div class="form-section-title">Rockstar Details</div>
+          <div class="form-grid">
+            <div class="field">
+              <label>Month <span class="req">*</span></label>
+              <select id="rs_month" onchange="updateRockstarHeaders()">
+                <option value="">— Select Month —</option>
+                <option>January</option><option>February</option><option>March</option>
+                <option>April</option><option>May</option><option>June</option>
+                <option>July</option><option>August</option><option>September</option>
+                <option>October</option><option>November</option><option>December</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>How many Rockstars? <span class="req">*</span></label>
+              <input type="number" id="rs_count" min="1" max="20" value="" placeholder="e.g. 3"
+                     onchange="generateRockstarCards()" oninput="generateRockstarCards()"/>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section" id="rockstarsSection" style="display:none">
+          <div class="form-section-title" id="rockstarsSectionTitle">Rockstar Entries</div>
+          <div id="rockstarsList"></div>
+        </div>
+
+        <div class="form-footer">
+          <button class="card-action" id="submitBtn" onclick="submitForm()">Submit Rockstars →</button>
+          <button class="clear-btn" onclick="window.location.href='../index.html'">Cancel</button>
+          <div id="formStatus" class="form-status"></div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp, getApps, getApp }                    from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+  import { getAuth, onAuthStateChanged, signOut }              from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+  import { getFirestore, collection, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+  var cfg = { apiKey:'AIzaSyD-mpyReAsJW3dUiWQhFlFeIvUYj_Iju-E', authDomain:'it-help-site.firebaseapp.com', databaseURL:'https://it-help-site-default-rtdb.firebaseio.com', projectId:'it-help-site', storageBucket:'it-help-site.firebasestorage.app', messagingSenderId:'742349139773', appId:'1:742349139773:web:3780ad352a9a7e00f55f54' };
+  var fbApp = getApps().length ? getApp() : initializeApp(cfg);
+  var auth  = getAuth(fbApp);
+  var db    = getFirestore(fbApp);
+
+  onAuthStateChanged(auth, function(user) {
+    if (!user || !user.email.endsWith('@rowecasaorganics.com')) {
+      signOut(auth).finally(function() { window.location.replace('../login.html'); });
+      return;
+    }
+    window._currentUser = user;
+    var el = document.getElementById('topbarUser');
+    if (el) el.textContent = user.email;
+  });
+
+  document.getElementById('authBtn')?.addEventListener('click', function() {
+    signOut(auth).then(function() { window.location.replace('../login.html'); });
+  });
+
+  window.submitForm = async function() {
+    var btn      = document.getElementById('submitBtn');
+    var statusEl = document.getElementById('formStatus');
+
+    var month = document.getElementById('rs_month').value;
+    var count = parseInt(document.getElementById('rs_count').value) || 0;
+
+    if (!month) { statusEl.textContent = 'Please select a month.'; statusEl.className = 'form-status error'; return; }
+    if (count < 1) { statusEl.textContent = 'Please enter at least 1 rockstar.'; statusEl.className = 'form-status error'; return; }
+
+    // Validate each rockstar has a name
+    var rockstars = [];
+    var missingNames = [];
+    for (var i = 0; i < count; i++) {
+      var nameEl = document.getElementById('rs_name_' + i);
+      var quoteEl = document.getElementById('rs_quote_' + i);
+      var name = nameEl ? nameEl.value.trim() : '';
+      var quote = quoteEl ? quoteEl.value.trim() : '';
+      var photoData = window._rockstarPhotos ? (window._rockstarPhotos[i] || '') : '';
+
+      if (!name) { missingNames.push('Rockstar #' + (i + 1)); continue; }
+      rockstars.push({ name: name, quote: quote, photo: photoData });
+    }
+
+    if (missingNames.length) {
+      statusEl.textContent = 'Please enter a name for: ' + missingNames.join(', ') + '.';
+      statusEl.className = 'form-status error'; return;
+    }
+
+    btn.textContent = 'Submitting...'; btn.disabled = true;
+    statusEl.className = 'form-status';
+
+    // Build payload for Google Sheets
+    var payload = {
+      month: month,
+      rockstar_count: count,
+      submitted_by: window._currentUser?.email || '',
+      submitted_at: new Date().toISOString()
+    };
+    for (var j = 0; j < rockstars.length; j++) {
+      payload['rs_' + j + '_name']  = rockstars[j].name;
+      payload['rs_' + j + '_quote'] = rockstars[j].quote;
+      payload['rs_' + j + '_photo'] = rockstars[j].photo ? 'Yes' : 'No';
+    }
+
+    // Post to Google Sheet (fire-and-forget)
+    var endpoint = 'https://script.google.com/macros/s/AKfycbzZ6mqqZBdkuSh3rbw4VMZDfRwAhmqp2IIoW_aDwYBNIX_L6wRscOj0fk4mA9S7Ahpg/exec';
+    fetch(endpoint, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) }).catch(function(e){ console.warn('Sheet post failed:', e); });
+
+    // Save submission with form data to Firestore
+    try {
+      var formDataObj = {
+        month: month,
+        rockstar_count: count,
+        rockstars: rockstars.map(function(r) { return { name: r.name, quote: r.quote }; })
+      };
+      console.log('Saving formData:', JSON.stringify(formDataObj));
+
+      await addDoc(collection(db, 'submissions'), {
+        title:       'RCO Rockstars',
+        dept:        month,
+        url:         'forms/rockstars.html',
+        uid:         window._currentUser.uid,
+        userEmail:   window._currentUser.email,
+        submittedAt: serverTimestamp(),
+        formData:    formDataObj
+      });
+      console.log('Submission saved successfully');
+    } catch(e) {
+      console.error('Submission save failed:', e);
+      statusEl.textContent = 'Submission failed. Please try again or email itsupport@rowecasaorganics.com.';
+      statusEl.className = 'form-status error';
+      btn.textContent = 'Submit Rockstars →'; btn.disabled = false;
+      return;
+    }
+
+    // Save rockstar photos separately (non-blocking)
+    try {
+      for (var k = 0; k < rockstars.length; k++) {
+        var compressed = rockstars[k].photo ? await compressImage(rockstars[k].photo, 400, 0.6) : '';
+        await addDoc(collection(db, 'rockstars'), {
+          month:       month,
+          name:        rockstars[k].name,
+          quote:       rockstars[k].quote,
+          photo:       compressed,
+          submittedBy: window._currentUser.email,
+          uid:         window._currentUser.uid,
+          submittedAt: serverTimestamp()
+        });
+      }
+    } catch(e) {
+      console.warn('Rockstar photo save failed (non-critical):', e);
+    }
+
+    document.getElementById('formWrap').style.display = 'none';
+    document.getElementById('successScreen').classList.add('show');
+  };
+
+  // Compress image via canvas to stay under Firestore limits
+  window.compressImage = function(dataUrl, maxDim, quality) {
+    return new Promise(function(resolve) {
+      var img = new Image();
+      img.onload = function() {
+        var w = img.width, h = img.height;
+        if (w > maxDim || h > maxDim) {
+          var ratio = Math.min(maxDim / w, maxDim / h);
+          w = Math.round(w * ratio);
+          h = Math.round(h * ratio);
+        }
+        var canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = function() { resolve(''); };
+      img.src = dataUrl;
+    });
+  };
+</script>
+
+<script>
+  // Track photo data per rockstar index
+  window._rockstarPhotos = {};
+
+  function generateRockstarCards() {
+    var count = parseInt(document.getElementById('rs_count').value) || 0;
+    var list = document.getElementById('rockstarsList');
+    var section = document.getElementById('rockstarsSection');
+
+    if (count < 1 || count > 20) {
+      list.innerHTML = '';
+      section.style.display = 'none';
+      return;
+    }
+
+    section.style.display = '';
+    updateRockstarHeaders();
+
+    // Preserve existing data
+    var existing = {};
+    for (var e = 0; e < 20; e++) {
+      var nameEl = document.getElementById('rs_name_' + e);
+      var quoteEl = document.getElementById('rs_quote_' + e);
+      if (nameEl) {
+        existing[e] = {
+          name: nameEl.value,
+          quote: quoteEl ? quoteEl.value : '',
+          photo: window._rockstarPhotos[e] || ''
+        };
+      }
+    }
+
+    var html = '';
+    for (var i = 0; i < count; i++) {
+      html += '<div class="rockstar-card" id="rockstar_card_' + i + '">';
+      html += '  <div class="rockstar-card-header">';
+      html += '    <div style="display:flex;align-items:center">';
+      html += '      <span class="rockstar-card-num">' + (i + 1) + '</span>';
+      html += '      <span class="rockstar-card-title">Rockstar #' + (i + 1) + '</span>';
+      html += '    </div>';
+      html += '  </div>';
+      html += '  <div class="rockstar-fields">';
+      html += '    <div class="field">';
+      html += '      <label>Name <span class="req">*</span></label>';
+      html += '      <input type="text" id="rs_name_' + i + '" placeholder="Rockstar\'s full name" value="' + escapeAttr(existing[i]?.name || '') + '"/>';
+      html += '    </div>';
+      html += '    <div class="field">';
+      html += '      <label>Photo <span class="field-note">(upload, drag & drop, or paste)</span></label>';
+      html += '      <div class="photo-drop-zone" id="photo_zone_' + i + '" onclick="triggerFileInput(' + i + ')" ondragover="handleDragOver(event,' + i + ')" ondragleave="handleDragLeave(event,' + i + ')" ondrop="handleDrop(event,' + i + ')">';
+      html += '        <input type="file" class="photo-file-input" id="photo_input_' + i + '" accept="image/*" onchange="handleFileSelect(event,' + i + ')"/>';
+      html += '        <button type="button" class="photo-remove-btn" onclick="removePhoto(event,' + i + ')">✕</button>';
+
+      if (existing[i]?.photo) {
+        html += '        <img src="' + existing[i].photo + '" class="photo-preview" id="photo_preview_' + i + '"/>';
+      } else {
+        html += '        <img src="" class="photo-preview" id="photo_preview_' + i + '" style="display:none"/>';
+      }
+
+      html += '        <div class="photo-drop-icon">📷</div>';
+      html += '        <div class="photo-drop-text">Click to upload or drag a photo here</div>';
+      html += '        <div class="photo-drop-hint">You can also paste an image from your clipboard (Ctrl+V)</div>';
+      html += '      </div>';
+      html += '    </div>';
+      html += '    <div class="field">';
+      html += '      <label>Quote <span class="field-note">(optional)</span></label>';
+      html += '      <textarea id="rs_quote_' + i + '" rows="2" placeholder="Their rockstar quote or what they did to earn it">' + escapeHtml(existing[i]?.quote || '') + '</textarea>';
+      html += '    </div>';
+      html += '  </div>';
+      html += '</div>';
+    }
+
+    list.innerHTML = html;
+
+    // Restore photo states
+    for (var r = 0; r < count; r++) {
+      if (existing[r]?.photo) {
+        window._rockstarPhotos[r] = existing[r].photo;
+        var zone = document.getElementById('photo_zone_' + r);
+        var preview = document.getElementById('photo_preview_' + r);
+        if (zone && preview) {
+          zone.classList.add('has-image');
+          preview.style.display = '';
+        }
+      }
+    }
+  }
+
+  function updateRockstarHeaders() {
+    var month = document.getElementById('rs_month').value;
+    var title = document.getElementById('rockstarsSectionTitle');
+    if (title) {
+      title.textContent = month ? month + ' Rockstars' : 'Rockstar Entries';
+    }
+  }
+
+  function triggerFileInput(idx) {
+    var input = document.getElementById('photo_input_' + idx);
+    // Only trigger if no image yet
+    var zone = document.getElementById('photo_zone_' + idx);
+    if (zone && zone.classList.contains('has-image')) return;
+    if (input) input.click();
+  }
+
+  function handleFileSelect(event, idx) {
+    var file = event.target.files[0];
+    if (file) processImageFile(file, idx);
+  }
+
+  function handleDragOver(event, idx) {
+    event.preventDefault();
+    event.stopPropagation();
+    document.getElementById('photo_zone_' + idx)?.classList.add('drag-over');
+  }
+
+  function handleDragLeave(event, idx) {
+    event.preventDefault();
+    event.stopPropagation();
+    document.getElementById('photo_zone_' + idx)?.classList.remove('drag-over');
+  }
+
+  function handleDrop(event, idx) {
+    event.preventDefault();
+    event.stopPropagation();
+    document.getElementById('photo_zone_' + idx)?.classList.remove('drag-over');
+    var file = event.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) {
+      processImageFile(file, idx);
+    }
+  }
+
+  function removePhoto(event, idx) {
+    event.stopPropagation();
+    var zone = document.getElementById('photo_zone_' + idx);
+    var preview = document.getElementById('photo_preview_' + idx);
+    var input = document.getElementById('photo_input_' + idx);
+    if (zone) zone.classList.remove('has-image');
+    if (preview) { preview.src = ''; preview.style.display = 'none'; }
+    if (input) input.value = '';
+    window._rockstarPhotos[idx] = '';
+  }
+
+  function processImageFile(file, idx) {
+    if (!file.type.startsWith('image/')) return;
+    // Limit to 2MB
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Image is too large. Please use an image under 2MB.');
+      return;
+    }
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      setPhoto(idx, e.target.result);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function setPhoto(idx, dataUrl) {
+    var zone = document.getElementById('photo_zone_' + idx);
+    var preview = document.getElementById('photo_preview_' + idx);
+    if (zone) zone.classList.add('has-image');
+    if (preview) { preview.src = dataUrl; preview.style.display = ''; }
+    window._rockstarPhotos[idx] = dataUrl;
+  }
+
+  // Global paste handler — paste image into the focused/hovered rockstar card
+  document.addEventListener('paste', function(event) {
+    var items = (event.clipboardData || event.originalEvent.clipboardData).items;
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        var file = items[i].getAsFile();
+        // Find which rockstar card is focused/active
+        var activeEl = document.activeElement;
+        var card = activeEl?.closest('.rockstar-card');
+        if (card) {
+          var idx = parseInt(card.id.replace('rockstar_card_', ''));
+          if (!isNaN(idx)) {
+            event.preventDefault();
+            processImageFile(file, idx);
+            return;
+          }
+        }
+        // Default: paste into first card without a photo
+        var count = parseInt(document.getElementById('rs_count').value) || 0;
+        for (var j = 0; j < count; j++) {
+          if (!window._rockstarPhotos[j]) {
+            event.preventDefault();
+            processImageFile(file, j);
+            return;
+          }
+        }
+      }
+    }
+  });
+
+  function escapeAttr(s) { return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function escapeHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+</script>
+</body>
+</html>

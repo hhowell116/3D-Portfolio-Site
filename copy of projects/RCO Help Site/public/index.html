@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>IT Help Site — Rowe Casa Organics</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css"/>
+  <style>
+    :root { --sb-muted: #6a5e57; }
+    html  { font-size: 18px; letter-spacing: 0.01em; }
+
+    .role-badge {
+      font-size: 0.68rem; font-weight: 800; padding: 0.22rem 0.65rem;
+      border-radius: 999px; letter-spacing: 0.04em; text-transform: uppercase;
+      white-space: nowrap; display: none;
+    }
+    .role-badge[data-role]            { display: inline-block; }
+    .role-badge[data-role="it_admin"] { background: rgba(46,204,138,0.15); color: #1aaf72; }
+
+    .copy-toast {
+      position: fixed; bottom: 1.75rem; left: 50%;
+      transform: translateX(-50%) translateY(8px);
+      background: #2ecc8a; color: #fff; font-size: 0.82rem; font-weight: 700;
+      padding: 0.55rem 1.4rem; border-radius: 999px;
+      box-shadow: 0 4px 16px rgba(46,204,138,0.35);
+      opacity: 0; transition: opacity 0.22s, transform 0.22s;
+      pointer-events: none; z-index: 900; white-space: nowrap;
+    }
+    .copy-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    .portal-email-btn {
+      display: block; width: 100%; background: none; border: none;
+      border-radius: 8px; padding: 0.4rem 0.6rem;
+      font-size: 0.67rem; color: var(--sb-muted);
+      font-family: inherit; font-weight: 600; cursor: pointer;
+      text-align: center; transition: all 0.18s; margin-top: 4px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .portal-email-btn:hover { background: var(--brand-soft); color: var(--brand-brown); }
+
+    .card-copy-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      background: none; border: none; color: var(--sb-muted);
+      padding: 0.2rem 0.35rem; border-radius: 6px; font-size: 0.75rem;
+      font-family: inherit; cursor: pointer; transition: all 0.15s; min-width: 24px;
+    }
+    .card-copy-btn:hover { color: var(--brand-brown); background: var(--brand-soft); }
+    .card-copy-btn.disabled { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
+
+    .completed-sheet-link {
+      display: none; align-items: center; gap: 0.35rem;
+      font-size: 0.75rem; font-weight: 700; color: var(--brand-brown);
+      text-decoration: none;
+      background: var(--brand-soft); border: 1.5px solid var(--brand-hover-border);
+      padding: 0.28rem 0.75rem; border-radius: 7px; transition: all 0.15s; white-space: nowrap;
+    }
+    .completed-sheet-link:hover { background: var(--brand-grad); color: #fff; border-color: var(--brand-brown); }
+    .completed-sheet-link.visible { display: inline-flex; }
+
+    .completed-controls {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 0.75rem;
+      margin-bottom: 1rem; padding-bottom: 1rem;
+      border-bottom: 1.5px solid var(--sb-sep);
+    }
+    .type-tabs {
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      background: var(--sidebar-bg); border: 1.5px solid var(--sb-border);
+      border-radius: 999px; padding: 0.25rem;
+    }
+    .type-tab {
+      padding: 0.35rem 1.1rem; border-radius: 999px; border: none;
+      font-size: 0.8rem; font-weight: 700; font-family: inherit;
+      cursor: pointer; transition: all 0.18s; background: none; color: var(--sb-muted);
+    }
+    .type-tab.active { background: var(--brand-grad); color: #fff; box-shadow: 0 2px 8px rgba(95,75,60,0.25); }
+
+    .submissions-toggle {
+      display: none; align-items: center; gap: 0.3rem;
+      background: var(--sidebar-bg); border: 1.5px solid var(--sb-border);
+      border-radius: 999px; padding: 0.25rem;
+    }
+    .submissions-toggle.visible { display: inline-flex; }
+    .toggle-btn {
+      padding: 0.35rem 1.1rem; border-radius: 999px; border: none;
+      font-size: 0.8rem; font-weight: 700; font-family: inherit;
+      cursor: pointer; transition: all 0.18s; background: none; color: var(--sb-muted);
+    }
+    .toggle-btn.active { background: var(--brand-grad); color: #fff; box-shadow: 0 2px 8px rgba(95,75,60,0.25); }
+
+    .sheet-links-group { display: none; align-items: center; gap: 0.35rem; }
+    .sheet-links-group.visible { display: inline-flex; }
+    .sheet-links-label { font-size: 0.72rem; font-weight: 700; color: var(--sb-muted); white-space: nowrap; }
+
+    .sub-filter-row { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
+    .sub-filter-btn {
+      padding: 0.3rem 0.9rem; border-radius: 999px;
+      border: 1.5px solid var(--sb-border);
+      background: var(--panel-bg); color: var(--sb-muted);
+      font-size: 0.78rem; font-weight: 700; font-family: inherit;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .sub-filter-btn:hover { border-color: var(--brand-hover-border); color: var(--brand-brown); }
+    .sub-filter-btn.active { background: var(--brand-soft); border-color: var(--brand-brown); color: var(--brand-brown); }
+
+    .auth-loading {
+      position: absolute; inset: 0; background: var(--panel-bg); border-radius: 16px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 0.75rem; z-index: 50;
+    }
+    .auth-loading.hidden { display: none; }
+    .auth-loading p { font-size: 0.85rem; color: var(--sb-muted); font-weight: 600; }
+
+    .access-notice {
+      background: var(--sidebar-bg); border: 1.5px solid var(--sb-border);
+      border-radius: 12px; padding: 2rem; text-align: center;
+      color: var(--sb-muted); font-size: 0.875rem; display: none;
+    }
+    .access-notice.show { display: block; }
+
+    /* Contact Guide Modal */
+    .cg-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.48);
+      backdrop-filter: blur(7px); z-index: 600;
+      display: flex; align-items: center; justify-content: center; padding: 1rem;
+    }
+    .cg-overlay.hidden { display: none; }
+    .cg-box {
+      background: var(--panel-bg); border: 1.5px solid var(--sb-border);
+      border-radius: 20px; padding: 2rem 2.25rem;
+      max-width: 620px; width: 100%; max-height: 88vh; overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.22);
+    }
+    .cg-box h2 { font-size: 1.2rem; font-weight: 800; color: var(--sb-text); margin-bottom: 0.3rem; }
+    .cg-sub    { font-size: 0.85rem; color: var(--sb-muted); line-height: 1.6; margin-bottom: 1.5rem; }
+    .cg-section { margin-bottom: 1.5rem; }
+    .cg-section-title {
+      font-size: 0.72rem; font-weight: 800; text-transform: uppercase;
+      letter-spacing: 0.07em; color: var(--sb-muted);
+      margin-bottom: 0.65rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--sb-sep);
+    }
+    .cg-methods { display: flex; flex-direction: column; gap: 0.5rem; }
+    .cg-method {
+      display: flex; align-items: center; gap: 0.85rem;
+      background: var(--sidebar-bg); border: 1.5px solid var(--sb-border);
+      border-radius: 11px; padding: 0.75rem 1rem;
+    }
+    .cg-method-icon {
+      font-size: 1.25rem; flex-shrink: 0; width: 36px; height: 36px;
+      background: var(--brand-soft); border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .cg-method-text strong { display: block; font-size: 0.88rem; color: var(--sb-text); font-weight: 700; }
+    .cg-method-text span   { font-size: 0.8rem; color: var(--sb-muted); line-height: 1.5; }
+    .cg-method-text a      { color: var(--brand-brown); font-weight: 700; text-decoration: none; }
+    .cg-method-text a:hover { text-decoration: underline; }
+    .cg-emergency {
+      background: rgba(220,80,60,0.07); border: 1.5px solid rgba(220,80,60,0.28);
+      border-radius: 12px; padding: 1rem 1.25rem;
+    }
+    .cg-emergency-head  { font-size: 0.92rem; font-weight: 800; color: #c0392b; margin-bottom: 0.55rem; }
+    .cg-emergency-phone { font-size: 1.05rem; font-weight: 800; color: #c0392b; margin-bottom: 0.65rem; }
+    .cg-emergency ul    { padding-left: 1.1rem; margin: 0; display: flex; flex-direction: column; gap: 0.3rem; }
+    .cg-emergency ul li { font-size: 0.82rem; color: #8b2a1f; line-height: 1.5; }
+    .cg-include-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.45rem; }
+    @media(max-width:520px){ .cg-include-grid,.cg-examples,.cg-split { grid-template-columns: 1fr; } }
+    .cg-include-item {
+      display: flex; align-items: flex-start; gap: 0.5rem;
+      background: var(--sidebar-bg); border: 1px solid var(--sb-border);
+      border-radius: 9px; padding: 0.55rem 0.75rem;
+      font-size: 0.8rem; color: var(--sb-text); line-height: 1.45;
+    }
+    .cg-include-item::before { content:'✓'; color: var(--success); font-weight: 800; font-size: 0.78rem; flex-shrink: 0; margin-top: 0.05rem; }
+    .cg-examples { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    .cg-ex-card { border-radius: 11px; padding: 0.9rem 1rem; border: 1.5px solid; }
+    .cg-ex-good { background: var(--success-soft); border-color: rgba(46,204,138,0.3); }
+    .cg-ex-bad  { background: rgba(220,80,60,0.06); border-color: rgba(220,80,60,0.22); }
+    .cg-ex-label { font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.45rem; }
+    .cg-ex-good .cg-ex-label { color: var(--success); }
+    .cg-ex-bad  .cg-ex-label { color: #c0392b; }
+    .cg-ex-card p  { font-size: 0.78rem; color: var(--sb-text); line-height: 1.55; margin: 0; }
+    .cg-ex-why     { font-size: 0.73rem; color: var(--sb-muted); margin-top: 0.45rem; font-style: italic; }
+    .cg-split { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    .cg-split-card   { border-radius: 11px; padding: 0.9rem 1rem; border: 1.5px solid; }
+    .cg-split-ticket { background: var(--success-soft); border-color: rgba(46,204,138,0.3); }
+    .cg-split-call   { background: rgba(220,80,60,0.06); border-color: rgba(220,80,60,0.22); }
+    .cg-split-head   { font-size: 0.78rem; font-weight: 800; margin-bottom: 0.5rem; }
+    .cg-split-ticket .cg-split-head { color: var(--success); }
+    .cg-split-call   .cg-split-head { color: #c0392b; }
+    .cg-split-card ul    { padding-left: 1rem; margin: 0; display: flex; flex-direction: column; gap: 0.3rem; }
+    .cg-split-card ul li { font-size: 0.79rem; color: var(--sb-text); line-height: 1.45; }
+    .cg-bfcm {
+      background: linear-gradient(135deg, #5f4b3c 0%, #8d8173 100%);
+      border-radius: 12px; padding: 1rem 1.25rem;
+      display: flex; gap: 0.75rem; align-items: flex-start;
+    }
+    .cg-bfcm-icon { font-size: 1.3rem; flex-shrink: 0; }
+    .cg-bfcm-text strong { display: block; font-size: 0.9rem; color: #fff; font-weight: 800; margin-bottom: 0.25rem; }
+    .cg-bfcm-text span   { font-size: 0.8rem; color: rgba(255,255,255,0.82); line-height: 1.5; }
+    .cg-close {
+      width: 100%; margin-top: 1.5rem; padding: 0.7rem;
+      background: var(--brand-grad); color: #fff; border: none;
+      border-radius: 10px; font-size: 0.9rem; font-weight: 700;
+      font-family: inherit; cursor: pointer; transition: opacity 0.18s;
+    }
+    .cg-close:hover { opacity: 0.88; }
+
+    /* Results Table */
+    .results-table-wrap { overflow-x: auto; }
+    .results-table {
+      width: 100%; border-collapse: collapse; font-size: 0.82rem;
+    }
+    .results-table th {
+      text-align: left; padding: 0.6rem 0.75rem;
+      background: var(--brand-brown); color: #fff;
+      font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.04em; white-space: nowrap;
+      position: sticky; top: 0; z-index: 2;
+    }
+    .results-table td {
+      padding: 0.55rem 0.75rem; border-bottom: 1px solid var(--sb-sep);
+      color: var(--sb-text); vertical-align: top; max-width: 300px;
+      overflow: hidden; text-overflow: ellipsis;
+    }
+    .results-table tr:hover td { background: var(--brand-soft); }
+    .results-table .group-header td {
+      background: var(--sidebar-bg); font-weight: 700; font-size: 0.85rem;
+      padding: 0.7rem 0.75rem; color: var(--brand-brown);
+      border-bottom: 2px solid var(--brand-hover-border);
+    }
+    .results-count {
+      font-size: 0.78rem; font-weight: 700; color: var(--sb-muted);
+      margin-bottom: 0.75rem;
+    }
+    .results-expand-btn {
+      background: none; border: 1.5px solid var(--sb-border);
+      color: var(--sb-muted); padding: 0.35rem 0.9rem; border-radius: 8px;
+      font-size: 0.78rem; font-weight: 700; cursor: pointer; font-family: inherit;
+      transition: all 0.15s; margin-top: 0.75rem;
+    }
+    .results-expand-btn:hover { border-color: var(--brand-hover-border); color: var(--brand-brown); }
+
+    /* Sheets dropdown */
+    .sheets-dropdown {
+      display: none; flex-direction: column; gap: 3px;
+      padding: 4px 8px 6px; margin-top: -2px;
+    }
+    .sheets-dropdown.show { display: flex; }
+    .sheets-dropdown a {
+      font-size: 0.7rem; font-weight: 600; color: var(--sb-muted);
+      text-decoration: none; padding: 0.3rem 0.5rem; border-radius: 6px;
+      transition: all 0.15s; white-space: nowrap;
+    }
+    .sheets-dropdown a:hover { background: var(--brand-soft); color: var(--brand-brown); }
+  </style>
+</head>
+<body>
+
+  <div class="app-shell">
+
+    <aside class="sidebar">
+      <div class="sidebar-logo-wrap">
+        <img src="assets/logo.png" alt="Rowe Casa Organics" class="sidebar-logo"/>
+      </div>
+      <div class="sidebar-divider"></div>
+      <nav class="sidebar-nav">
+        <button class="nav-btn active" data-section="surveys"><span class="nav-icon">📋</span> Surveys</button>
+        <button class="nav-btn" data-section="forms"><span class="nav-icon">📝</span> Request Forms</button>
+        <button class="nav-btn" data-section="completed"><span class="nav-icon">✅</span> Completed</button>
+        <div class="sidebar-divider" id="resultsDividerTop" style="display:none;margin:4px 0"></div>
+        <button class="nav-btn" data-section="results" id="resultsNavBtn" style="display:none;white-space:nowrap;font-size:0.75rem">Survey &amp; Form Results</button>
+        <button class="nav-btn" data-section="sheets" id="sheetsNavBtn" style="display:none;white-space:nowrap;font-size:0.75rem">Google Sheets</button>
+        <button class="nav-btn" data-section="roles" id="rolesNavBtn" style="display:none;white-space:nowrap;font-size:0.75rem">Roles / Access</button>
+        <div class="sidebar-divider" id="resultsDividerBottom" style="display:none;margin:4px 0"></div>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="nav-btn" data-section="knowledge" style="margin-bottom:8px">
+          <span class="nav-icon"></span> IT Knowledge Base
+        </button>
+        <div class="sidebar-divider"></div>
+        <button class="contact-btn" data-section="contact">✉️ Contact Us</button>
+        <button class="portal-email-btn"
+                title="Email itsupport@rowecasaorganics.com"
+                onclick="window.open('https://mail.google.com/mail/?view=cm&fs=1&to=itsupport%40rowecasaorganics.com','_blank')">
+          itsupport@rowecasaorganics.com
+        </button>
+      </div>
+    </aside>
+
+    <div class="main-wrap">
+      <header class="topbar">
+        <div class="topbar-left">
+          <div class="topbar-title">Welcome to the RCO IT Help Site</div>
+          <div class="topbar-desc">Submit surveys, request IT support, or reach out to our team directly.</div>
+        </div>
+        <div class="topbar-right">
+          <span class="role-badge" id="roleBadge"></span>
+          <span class="topbar-user" id="topbarUser">Not signed in</span>
+          <button class="sign-btn" id="authBtn">Sign Out</button>
+        </div>
+      </header>
+
+      <main class="content-panel" style="position:relative">
+
+        <div class="auth-loading" id="authLoading">
+          <div class="login-spinner"></div>
+          <p>Loading your portal...</p>
+        </div>
+
+        <!-- ── FORM & SURVEY RESULTS (IT Admin only) ── -->
+        <section class="section" id="section-results">
+          <div class="section-intro">
+            <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.3rem">
+              <h2>Form &amp; Survey Results</h2>
+              <span style="font-size:0.68rem;font-weight:800;padding:0.22rem 0.65rem;border-radius:999px;letter-spacing:0.04em;text-transform:uppercase;background:rgba(46,204,138,0.15);color:#1aaf72">IT Admin Eyes Only</span>
+            </div>
+            <p>View all submitted form and survey data.</p>
+          </div>
+          <div class="results-controls" style="display:flex;align-items:center;gap:0.65rem;flex-wrap:wrap;margin-bottom:1.25rem;padding-bottom:1rem;border-bottom:1.5px solid var(--sb-sep)">
+            <div class="type-tabs">
+              <button class="type-tab active" id="resTabAll" onclick="setResultsFilter('all')">All</button>
+              <button class="type-tab" id="resTabSurveys" onclick="setResultsFilter('surveys')">Surveys</button>
+              <button class="type-tab" id="resTabForms" onclick="setResultsFilter('forms')">Forms</button>
+            </div>
+            <select id="resultsFormFilter" onchange="loadResults()" style="background:var(--sidebar-bg);border:1.5px solid var(--sb-border);border-radius:9px;padding:0.4rem 0.7rem;font-size:0.82rem;font-family:inherit;color:var(--sb-text);font-weight:600">
+              <option value="">All Forms &amp; Surveys</option>
+            </select>
+            <button class="clear-btn" style="margin:0" onclick="loadResults()">↻ Refresh</button>
+          </div>
+          <div id="resultsContainer">
+            <div class="empty-state" style="padding:2rem 0">
+              <div class="empty-icon">📊</div>
+              <p style="color:var(--sb-muted)">Click Refresh or select a filter to load results.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ── GOOGLE SHEETS (IT Admin only) ── -->
+        <section class="section" id="section-sheets">
+          <div class="section-intro">
+            <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.3rem">
+              <h2>Google Sheets</h2>
+              <span style="font-size:0.68rem;font-weight:800;padding:0.22rem 0.65rem;border-radius:999px;letter-spacing:0.04em;text-transform:uppercase;background:rgba(46,204,138,0.15);color:#1aaf72">IT Admin Eyes Only</span>
+            </div>
+            <p>Direct links to all form and survey response spreadsheets.</p>
+          </div>
+          <div class="cards">
+            <a href="https://docs.google.com/spreadsheets/d/1qGufmR0KvRCU8OhQiZgf1R9CnvEvBBHogAcUh6XbOeM/edit?gid=72884401#gid=72884401" target="_blank" class="card brown" style="text-decoration:none;cursor:pointer">
+              <div class="card-top"><span class="card-status status-active">Survey</span></div>
+              <h3>Software Inventory</h3>
+              <p>RCO IT Software Inventory survey responses.</p>
+              <div class="card-meta"><div class="card-meta-left"><span class="meta-label">Google Sheets</span></div><span class="card-action" style="pointer-events:none">Open Sheet →</span></div>
+            </a>
+            <a href="https://docs.google.com/spreadsheets/d/1HA_jQYKXn5X-WhcIUd79NPzR_WIzCi5y5CJ9aW7fVGk/edit?gid=1473197887#gid=1473197887" target="_blank" class="card brown" style="text-decoration:none;cursor:pointer">
+              <div class="card-top"><span class="card-status status-active">Form</span></div>
+              <h3>User Onboarding</h3>
+              <p>New employee onboarding request responses.</p>
+              <div class="card-meta"><div class="card-meta-left"><span class="meta-label">Google Sheets</span></div><span class="card-action" style="pointer-events:none">Open Sheet →</span></div>
+            </a>
+            <a href="https://docs.google.com/spreadsheets/d/1HIlC6OlWtyIN8DH1kRnf0P2GBHGlHUWBJxFyllfdwjk/edit?gid=2068521876#gid=2068521876" target="_blank" class="card brown" style="text-decoration:none;cursor:pointer">
+              <div class="card-top"><span class="card-status status-active">Form</span></div>
+              <h3>User Offboarding</h3>
+              <p>Employee offboarding request responses.</p>
+              <div class="card-meta"><div class="card-meta-left"><span class="meta-label">Google Sheets</span></div><span class="card-action" style="pointer-events:none">Open Sheet →</span></div>
+            </a>
+            <a href="https://docs.google.com/spreadsheets/d/1fbvR-hUOgW_nmhzuNn7mnS2bk75dbzUa-x_leXWt2Wo/edit?gid=461376341#gid=461376341" target="_blank" class="card brown" style="text-decoration:none;cursor:pointer">
+              <div class="card-top"><span class="card-status status-active">Form</span></div>
+              <h3>Equipment &amp; Software</h3>
+              <p>IT equipment and software request responses.</p>
+              <div class="card-meta"><div class="card-meta-left"><span class="meta-label">Google Sheets</span></div><span class="card-action" style="pointer-events:none">Open Sheet →</span></div>
+            </a>
+            <a href="https://docs.google.com/spreadsheets/d/1EctqjjirIIpJsLu4QgY7OpaQ0wnlid4h8zhfFMedkvk/edit?gid=689718345#gid=689718345" target="_blank" class="card brown" style="text-decoration:none;cursor:pointer">
+              <div class="card-top"><span class="card-status status-active">Form</span></div>
+              <h3>RCO Rockstars</h3>
+              <p>Monthly rockstar nomination responses.</p>
+              <div class="card-meta"><div class="card-meta-left"><span class="meta-label">Google Sheets</span></div><span class="card-action" style="pointer-events:none">Open Sheet →</span></div>
+            </a>
+          </div>
+        </section>
+
+        <!-- ── ROLES / ACCESS (IT Admin only) ── -->
+        <section class="section" id="section-roles">
+          <div class="section-intro">
+            <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.3rem">
+              <h2>Roles / Access</h2>
+              <span style="font-size:0.68rem;font-weight:800;padding:0.22rem 0.65rem;border-radius:999px;letter-spacing:0.04em;text-transform:uppercase;background:rgba(46,204,138,0.15);color:#1aaf72">IT Admin Eyes Only</span>
+            </div>
+            <p>Overview of all roles, members, and what each role can access on this site.</p>
+          </div>
+
+          <!-- Access Overview (unified toggles) -->
+          <div style="margin-bottom:2rem">
+            <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.75rem">
+              <h3 style="font-size:0.88rem;font-weight:800;color:var(--sb-text)">Access Overview</h3>
+              <span id="permSaveStatus" class="perm-save-status"></span>
+            </div>
+            <p style="font-size:0.78rem;color:var(--sb-muted);margin-bottom:1rem">Toggle which roles can access each area of the site. Changes save to Firebase in real time. IT Admin always has full access.</p>
+            <div class="perm-table-wrap">
+              <table class="perm-table">
+                <thead>
+                  <tr>
+                    <th style="text-align:left">Feature</th>
+                    <th>IT Admin</th>
+                    <th>C-Suite</th>
+                    <th>Director</th>
+                    <th>Manager</th>
+                    <th>Staff</th>
+                  </tr>
+                </thead>
+                <tbody id="permTogglesBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Role Members -->
+          <div>
+            <h3 style="font-size:0.88rem;font-weight:800;color:var(--sb-text);margin-bottom:0.75rem">Members by Role</h3>
+            <div id="roleMembersList"></div>
+          </div>
+        </section>
+
+        <!-- ── SURVEYS ── -->
+        <section class="section active" id="section-surveys">
+          <div class="section-intro">
+            <h2>IT Surveys</h2>
+            <p>Complete your assigned surveys to help our team manage technology across the organization.</p>
+            <p style="font-size:0.78rem;color:var(--sb-muted);margin-top:0.35rem">Feel free to resubmit anytime — each submission is saved separately.</p>
+          </div>
+          <div class="cards">
+            <div class="card brown" data-content-id="tech-discovery" style="display:none">
+              <div class="card-top"><span class="card-status status-active">Active</span></div>
+              <h3>RCO IT Software Inventory</h3>
+              <p>Help us build a complete inventory of every tool, app, SaaS platform, and account used across your department.</p>
+              <div class="card-meta">
+                <div class="card-meta-left">
+                  <span class="meta-label">Est. completion time</span>
+                  <span class="meta-value">10 – 15 mins</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:0.5rem">
+                  <button class="card-copy-btn"
+                          onclick="copyLink(getSurveyUrl('surveys/tech-discovery.html'), this)"
+                          title="Copy a direct link to this survey">🔗</button>
+                  <button class="card-action" id="startSurveyBtn">Start →</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="access-notice" id="surveysAccessNotice">
+            No surveys are currently assigned to your role. Check back soon or contact IT if you think this is an error.
+          </div>
+        </section>
+
+        <!-- ── FORMS ── -->
+        <section class="section" id="section-forms">
+          <div class="section-intro">
+            <h2>Request Forms</h2>
+            <p>Submit IT requests for new employees, departing staff, or equipment and software needs.</p>
+            <p style="font-size:0.78rem;color:var(--sb-muted);margin-top:0.35rem">Feel free to resubmit anytime — each submission is saved separately.</p>
+          </div>
+          <div class="cards">
+
+            <div class="card brown" data-content-id="onboarding" style="display:none">
+              <div class="card-top"><span class="card-status status-active">Active</span></div>
+              <h3>User Onboarding Request</h3>
+              <p>Submit everything IT needs to provision a new employee — role, system access, devices, and software requirements.</p>
+              <div class="card-meta">
+                <div class="card-meta-left">
+                  <span class="meta-label">Est. completion time</span>
+                  <span class="meta-value">3 – 5 mins</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:0.5rem">
+                  <button class="card-copy-btn"
+                          onclick="copyLink(getSurveyUrl('forms/onboarding.html'), this)"
+                          title="Copy a direct link to this form">🔗</button>
+                  <button class="card-action" onclick="window.location.href='forms/onboarding.html'">Open Form →</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="card brown" data-content-id="offboarding" style="display:none">
+              <div class="card-top"><span class="card-status status-active">Active</span></div>
+              <h3>User Offboarding Request</h3>
+              <p>Capture separation details for a departing employee — access revocation, email handling, file transfer, and device return.</p>
+              <div class="card-meta">
+                <div class="card-meta-left">
+                  <span class="meta-label">Est. completion time</span>
+                  <span class="meta-value">3 – 5 mins</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:0.5rem">
+                  <button class="card-copy-btn"
+                          onclick="copyLink(getSurveyUrl('forms/offboarding.html'), this)"
+                          title="Copy a direct link to this form">🔗</button>
+                  <button class="card-action" onclick="window.location.href='forms/offboarding.html'">Open Form →</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="card brown" data-content-id="equipment" style="display:none">
+              <div class="card-top"><span class="card-status status-active">Active</span></div>
+              <h3>IT Equipment &amp; Software Request</h3>
+              <p>Request any technology need — hardware, software, or licenses — with business justification.</p>
+              <div class="card-meta">
+                <div class="card-meta-left">
+                  <span class="meta-label">Est. completion time</span>
+                  <span class="meta-value">2 – 4 mins</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:0.5rem">
+                  <button class="card-copy-btn"
+                          onclick="copyLink(getSurveyUrl('forms/equipment.html'), this)"
+                          title="Copy a direct link to this form">🔗</button>
+                  <button class="card-action" onclick="window.location.href='forms/equipment.html'">Open Form →</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="card brown" data-content-id="rockstars" style="display:none">
+              <div class="card-top"><span class="card-status status-active">Active</span></div>
+              <h3>RCO Rockstars</h3>
+              <p>Submit this month's rockstars — let everyone know who went above and beyond.</p>
+              <div class="card-meta">
+                <div class="card-meta-left">
+                  <span class="meta-label">Est. completion time</span>
+                  <span class="meta-value">3 – 5 mins</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:0.5rem">
+                  <button class="card-copy-btn"
+                          onclick="copyLink(getSurveyUrl('forms/rockstars.html'), this)"
+                          title="Copy a direct link to this form">🔗</button>
+                  <button class="card-action" onclick="window.location.href='forms/rockstars.html'">Open Form →</button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+          <div class="access-notice" id="formsAccessNotice">
+            No forms are currently assigned to your role. Contact IT if you think this is an error.
+          </div>
+        </section>
+
+        <!-- ── COMPLETED ── -->
+        <section class="section" id="section-completed">
+          <div class="section-intro">
+            <h2>Completed Submissions</h2>
+            <p>A record of surveys and forms you have submitted.</p>
+          </div>
+          <div class="completed-controls">
+            <div style="display:flex;align-items:center;gap:0.65rem;flex-wrap:wrap">
+              <div class="type-tabs">
+                <button class="type-tab active" id="tabSurveys" onclick="setTypeTab('surveys')">📋 Surveys</button>
+                <button class="type-tab"         id="tabForms"   onclick="setTypeTab('forms')">📝 Forms</button>
+              </div>
+              <div class="submissions-toggle" id="submissionsToggle">
+                <button class="toggle-btn active" id="toggleMine" onclick="setSubmissionsView('mine')">My Submissions</button>
+                <button class="toggle-btn"        id="toggleAll"  onclick="setSubmissionsView('all')">Everyone's</button>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:0.65rem">
+              <button class="clear-btn" style="margin:0" id="refreshBtn">↻ Refresh</button>
+            </div>
+          </div>
+          <div class="sub-filter-row" id="subFilterRow"></div>
+          <div id="completedSurveysList"></div>
+          <div id="completedFormsList" style="display:none"></div>
+        </section>
+
+        <!-- ── KNOWLEDGE BASE ── -->
+        <section class="section" id="section-knowledge">
+          <div class="section-intro">
+            <h2>IT Knowledge Base</h2>
+            <p>Guides, how-tos, and IT documentation for the RCO team.</p>
+          </div>
+          <div class="construction-wrap">
+            <div class="construction-badge">
+              <div class="construction-emoji">🚧</div>
+              <span class="construction-tag">Coming Soon</span>
+              <h2>Under Construction</h2>
+              <p>The IT Knowledge Base is being built out. Check back soon for guides, FAQs, and documentation.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ── CONTACT ── -->
+        <section class="section" id="section-contact">
+          <div class="section-intro">
+            <h2>Contact IT Support</h2>
+            <p>Reach out to the RCO IT team — use the form below to compose a message, or email us directly.</p>
+          </div>
+          <div style="background:var(--sidebar-bg);border:1.5px solid var(--sb-border);border-radius:14px;
+                      padding:1.25rem 1.5rem;margin-bottom:1.25rem;max-width:580px">
+            <h3 style="font-size:0.88rem;font-weight:800;color:var(--sb-text);margin-bottom:0.6rem">How to Contact IT</h3>
+            <p style="font-size:0.875rem;color:var(--sb-muted);line-height:1.7;margin-bottom:0.9rem">
+              For general IT support, questions, or requests, the best way to reach us is by submitting a ticket or
+              emailing us directly. We typically respond within one business day.
+            </p>
+            <button onclick="document.getElementById('cgModal').classList.remove('hidden')"
+                    style="display:inline-flex;align-items:center;gap:0.45rem;
+                           background:var(--brand-soft);border:1.5px solid var(--brand-hover-border);
+                           color:var(--brand-brown);padding:0.5rem 1.1rem;border-radius:9px;
+                           font-size:0.875rem;font-weight:700;font-family:inherit;cursor:pointer;transition:all 0.15s"
+                    onmouseover="this.style.background='var(--brand-grad)';this.style.color='#fff';this.style.borderColor='var(--brand-brown)'"
+                    onmouseout="this.style.background='var(--brand-soft)';this.style.color='var(--brand-brown)';this.style.borderColor='var(--brand-hover-border)'">
+              📋 How to Contact IT — Full Guide
+            </button>
+          </div>
+          <div class="contact-form-wrap">
+            <div class="contact-field">
+              <label for="contactFrom">Your Email Address</label>
+              <input type="email" id="contactFrom" placeholder="yourname@rowecasaorganics.com"/>
+            </div>
+            <div class="contact-field">
+              <label for="contactTo">To</label>
+              <input type="text" id="contactTo" value="itsupport@rowecasaorganics.com" readonly/>
+            </div>
+            <div class="contact-field">
+              <label for="contactSubject">Subject</label>
+              <input type="text" id="contactSubject" placeholder="Brief description of your issue or request"/>
+            </div>
+            <div class="contact-field">
+              <label for="contactBody">Message</label>
+              <textarea id="contactBody" rows="6" placeholder="Describe your issue, request, or question in detail..."></textarea>
+            </div>
+            <div class="contact-actions">
+              <button class="card-action" id="sendBtn">Send Message →</button>
+              <button class="clear-btn" id="clearBtn">Clear</button>
+            </div>
+            <div id="contactStatus" class="contact-status"></div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <div id="copyToast" class="copy-toast">🔗 Link copied to clipboard!</div>
+
+  <!-- How to Contact IT Modal -->
+  <div class="cg-overlay hidden" id="cgModal" onclick="if(event.target===this)this.classList.add('hidden')">
+    <div class="cg-box">
+      <h2>How to Contact IT</h2>
+      <p class="cg-sub">We use tickets to ensure every issue is tracked, prioritized, and handled by the right person — without anything slipping through the cracks.</p>
+      <div class="cg-section">
+        <div class="cg-section-title">✅ Preferred Methods — Each creates a ticket automatically</div>
+        <div class="cg-methods">
+          <div class="cg-method"><div class="cg-method-icon">✉️</div><div class="cg-method-text"><strong>Email</strong><span><a href="mailto:itsupport@rowecasaorganics.com">itsupport@rowecasaorganics.com</a></span></div></div>
+          <div class="cg-method"><div class="cg-method-icon">🌐</div><div class="cg-method-text"><strong>IT Portal</strong><span><a href="https://it.rowecasaorganics.com" target="_blank">it.rowecasaorganics.com</a></span></div></div>
+          <div class="cg-method"><div class="cg-method-icon">💬</div><div class="cg-method-text"><strong>Slack</strong><span>#rco-it-support</span></div></div>
+          <div class="cg-method"><div class="cg-method-icon">🖥️</div><div class="cg-method-text"><strong>System Tray Ticket Form</strong><span>Click the RCO IT Agent icon near the clock → select <em>IT Ticket Form</em> → fill in details → Save.</span></div></div>
+        </div>
+      </div>
+      <div class="cg-section">
+        <div class="cg-section-title">🚨 Emergencies — Critical Issues Only</div>
+        <div class="cg-emergency">
+          <div class="cg-emergency-head">📞 IT Emergency Line</div>
+          <div class="cg-emergency-phone">469-893-1998</div>
+          <p style="font-size:0.8rem;color:#8b2a1f;margin-bottom:0.6rem;line-height:1.5">Use this only for true critical events:</p>
+          <ul>
+            <li>Internet or network outage — wait ~5–10 minutes first</li>
+            <li>Major system failure where nobody can work</li>
+            <li>Any cybersecurity event (suspected hacking, phishing link clicked, etc.)</li>
+            <li>Production or shipping halted due to IT issues</li>
+            <li>Google Workspace or Deacom outages</li>
+          </ul>
+        </div>
+      </div>
+      <div class="cg-section">
+        <div class="cg-section-title">📝 What to Include in Your Ticket</div>
+        <div class="cg-include-grid">
+          <div class="cg-include-item">What you were trying to do</div>
+          <div class="cg-include-item">What happened (describe the issue)</div>
+          <div class="cg-include-item">What should have happened</div>
+          <div class="cg-include-item">Any error messages (text or screenshot)</div>
+          <div class="cg-include-item">Device location (Office, Warehouse, Station #)</div>
+          <div class="cg-include-item">Whether others are affected</div>
+          <div class="cg-include-item">Whether you've already rebooted</div>
+          <div class="cg-include-item">Anyone else who needs to be notified</div>
+        </div>
+      </div>
+      <div class="cg-section">
+        <div class="cg-section-title">🧩 Good vs. Bad Ticket Examples</div>
+        <div class="cg-examples">
+          <div class="cg-ex-card cg-ex-good">
+            <div class="cg-ex-label">✅ Good Ticket</div>
+            <p><strong>Subject:</strong> Can't print labels on Station 14<br/><br/>While printing shipping labels in Chrome, I get "Printer unreachable." Started at 9:40 AM. Rebooted — error persists. Model: Zebra ZD421. Station 12 still works. Screenshot attached.</p>
+            <p class="cg-ex-why">Clear, detailed, and immediately actionable.</p>
+          </div>
+          <div class="cg-ex-card cg-ex-bad">
+            <div class="cg-ex-label">❌ Bad Ticket</div>
+            <p><strong>Subject:</strong> Printer broken<br/><br/>Printer doesn't work. Please fix ASAP.</p>
+            <p class="cg-ex-why">Missing: location, device info, error details, steps already tried.</p>
+          </div>
+        </div>
+      </div>
+      <div class="cg-section">
+        <div class="cg-section-title">📞 When to Ticket vs. When to Call</div>
+        <div class="cg-split">
+          <div class="cg-split-card cg-split-ticket">
+            <div class="cg-split-head">✅ Submit a Ticket</div>
+            <ul>
+              <li>Issue affecting one or a few users</li>
+              <li>Multi-user issue with a workaround available</li>
+              <li>General requests (equipment, software, moves)</li>
+              <li>Access changes (badges, printers, permissions)</li>
+              <li>General IT questions</li>
+            </ul>
+          </div>
+          <div class="cg-split-card cg-split-call">
+            <div class="cg-split-head">🚨 Call Immediately</div>
+            <ul>
+              <li>Multiple people can't work — no workaround</li>
+              <li>Production or shipping stopped or severely slowed</li>
+              <li>Entire site loses internet or network</li>
+              <li>Deacom, Google Workspace, or core systems down</li>
+            </ul>
+          </div>
+        </div>
+        <p style="font-size:0.8rem;color:var(--sb-muted);margin-top:0.75rem;font-style:italic">Simple rule: If it affects everyone or critical work stops — call us.</p>
+      </div>
+      <div class="cg-section" style="margin-bottom:0">
+        <div class="cg-bfcm">
+          <div class="cg-bfcm-icon">🔺</div>
+          <div class="cg-bfcm-text">
+            <strong>BFCM Blackout — Nov 28 – Dec 13</strong>
+            <span>All issues impacting production or shipping are escalated to high priority. Call immediately for anything affecting fulfillment during this window.</span>
+          </div>
+        </div>
+      </div>
+      <button class="cg-close" onclick="document.getElementById('cgModal').classList.add('hidden')">Got it — Close Guide</button>
+    </div>
+  </div>
+
+  <script>
+    setTimeout(function() { document.getElementById('authLoading')?.classList.add('hidden'); }, 6000);
+    window._submissionsView = 'mine';
+    window._typeTab         = 'surveys';
+    window._subFilter       = null;
+
+    window.renderSubFilters = function(tab) {
+      var row = document.getElementById('subFilterRow');
+      if (!row) return;
+      var cfg = window._contentConfig;
+      if (!cfg) { row.innerHTML = ''; return; }
+      var items = tab === 'surveys' ? cfg.surveys : cfg.forms;
+      if (!items || !items.length) { row.innerHTML = ''; return; }
+      var html = '';
+      if (items.length > 1) html += '<button class="sub-filter-btn' + (!window._subFilter ? ' active' : '') + '" onclick="setSubFilter(null)">All</button>';
+      items.forEach(function(item) {
+        html += '<button class="sub-filter-btn' + (window._subFilter === item.id ? ' active' : '') + '" onclick="setSubFilter(\'' + item.id + '\')">' + item.title + '</button>';
+      });
+      row.innerHTML = html;
+    };
+    window.setSubFilter = function(id) {
+      window._subFilter = (window._subFilter === id) ? null : id;
+      window.renderSubFilters(window._typeTab);
+      if (typeof window._renderCompleted === 'function') window._renderCompleted();
+    };
+    function setTypeTab(tab) {
+      window._typeTab = tab; window._subFilter = null;
+      document.getElementById('tabSurveys').classList.toggle('active', tab === 'surveys');
+      document.getElementById('tabForms').classList.toggle('active',   tab === 'forms');
+      document.getElementById('completedSurveysList').style.display = tab === 'surveys' ? '' : 'none';
+      document.getElementById('completedFormsList').style.display   = tab === 'forms'   ? '' : 'none';
+      window.renderSubFilters(tab);
+    }
+    function setSubmissionsView(mode) {
+      window._submissionsView = mode;
+      document.getElementById('toggleMine').classList.toggle('active', mode === 'mine');
+      document.getElementById('toggleAll').classList.toggle('active',  mode === 'all');
+      if (typeof window._renderCompleted === 'function') window._renderCompleted();
+    }
+    function getSurveyUrl(path) {
+      var href = window.location.href.split('?')[0].split('#')[0];
+      var base = href.endsWith('/') ? href : href.substring(0, href.lastIndexOf('/') + 1);
+      return base + path;
+    }
+    function copyLink(url, btn) {
+      var done = function() {
+        showToast(); var orig = btn.innerHTML;
+        btn.innerHTML = '✓'; btn.style.color = 'var(--success)';
+        setTimeout(function() { btn.innerHTML = orig; btn.style.color = ''; }, 2000);
+      };
+      if (navigator.clipboard) navigator.clipboard.writeText(url).then(done).catch(function(){ fallbackCopy(url); done(); });
+      else { fallbackCopy(url); done(); }
+    }
+    function fallbackCopy(url) {
+      var el = document.createElement('textarea');
+      el.value = url; el.style.position = 'fixed'; el.style.opacity = '0';
+      document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el);
+    }
+    function showToast() {
+      var t = document.getElementById('copyToast'); t.classList.add('show');
+      setTimeout(function() { t.classList.remove('show'); }, 2500);
+    }
+  </script>
+
+  <script type="module">
+    import { initializeApp, getApps, getApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { getAuth, onAuthStateChanged }     from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import { getRole, getRoleLabel, canAccess, canViewSheets, canViewAllSubmissions, canViewResults, canViewRoles, loadPermissions, saveRolePermissions, roleHasAccess, getRoleContentIds, getAllItems, CONTENT_CONFIG, FEATURES_CONFIG, ROLE_NAMES, ROLE_LABELS, MEMBERS } from './js/roles.js';
+
+    const cfg = { apiKey:'AIzaSyD-mpyReAsJW3dUiWQhFlFeIvUYj_Iju-E', authDomain:'it-help-site.firebaseapp.com', databaseURL:'https://it-help-site-default-rtdb.firebaseio.com', projectId:'it-help-site', storageBucket:'it-help-site.firebasestorage.app', messagingSenderId:'742349139773', appId:'1:742349139773:web:3780ad352a9a7e00f55f54' };
+    const auth = getAuth(getApps().length ? getApp() : initializeApp(cfg));
+
+    onAuthStateChanged(auth, async user => {
+      if (!user || !user.email.endsWith('@rowecasaorganics.com')) return;
+      const email = user.email;
+      const role  = getRole(email);
+
+      // Load RTDB permission overrides before applying access
+      await loadPermissions();
+
+      const badge = document.getElementById('roleBadge');
+      if (badge && role === 'it_admin') { badge.textContent = getRoleLabel(email); badge.dataset.role = role; }
+
+      const cf = document.getElementById('contactFrom');
+      if (cf && !cf.value) cf.value = email;
+
+      applyAccess(email);
+
+      // Feature-level nav visibility
+      if (canViewSheets(email))         document.getElementById('sheetsNavBtn').style.display = '';
+      if (canViewRoles(email))          document.getElementById('rolesNavBtn').style.display = '';
+      if (canViewAllSubmissions(email))  document.getElementById('submissionsToggle')?.classList.add('visible');
+
+      if (canViewResults(email)) {
+        document.getElementById('resultsNavBtn').style.display = '';
+        document.getElementById('resultsDividerTop').style.display = '';
+        document.getElementById('resultsDividerBottom').style.display = '';
+        const dd = document.getElementById('resultsFormFilter');
+        if (dd && !dd.dataset.populated) {
+          dd.dataset.populated = '1';
+          [...CONTENT_CONFIG.surveys, ...CONTENT_CONFIG.forms].forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = item.title;
+            opt.textContent = item.title;
+            dd.appendChild(opt);
+          });
+        }
+      }
+
+      // Render permission toggle table (IT Admin only since they can see Roles panel)
+      if (canViewRoles(email)) renderPermToggles();
+
+      window._userEmail             = email;
+      window._userRole              = role;
+      window._canViewSheets         = canViewSheets(email);
+      window._canViewAllSubmissions = canViewAllSubmissions(email);
+      window._contentConfig         = CONTENT_CONFIG;
+
+      if (typeof window.renderSubFilters === 'function') window.renderSubFilters(window._typeTab || 'surveys');
+      document.getElementById('authLoading')?.classList.add('hidden');
+    });
+
+    // ── Apply access visibility to content cards ──────────────────────────
+    function applyAccess(email) {
+      let surveysVisible = 0, formsVisible = 0;
+      document.querySelectorAll('[data-content-id]').forEach(card => {
+        const id  = card.dataset.contentId;
+        const c   = [...CONTENT_CONFIG.surveys, ...CONTENT_CONFIG.forms].find(x => x.id === id);
+        if (!c) return;
+        const show = canAccess(email, id);
+        card.style.display = show ? '' : 'none';
+        if (show && CONTENT_CONFIG.surveys.some(s => s.id === id)) surveysVisible++;
+        if (show && CONTENT_CONFIG.forms.some(f => f.id === id))   formsVisible++;
+      });
+      document.getElementById('surveysAccessNotice')?.classList.toggle('show', surveysVisible === 0);
+      document.getElementById('formsAccessNotice')?.classList.toggle('show', formsVisible === 0);
+    }
+
+    // ── Render unified access overview with toggles ─────────────────────
+    function renderPermToggles() {
+      const tbody = document.getElementById('permTogglesBody');
+      if (!tbody) return;
+
+      const items = getAllItems();
+      const roles = ROLE_NAMES;
+
+      // Group by type for section headers
+      const groups = [
+        { label: 'Surveys', items: items.filter(i => i.type === 'Survey') },
+        { label: 'Forms',   items: items.filter(i => i.type === 'Form') },
+        { label: 'Site Features', items: items.filter(i => i.type === 'Feature') },
+      ];
+
+      let html = '';
+      groups.forEach(group => {
+        if (!group.items.length) return;
+        html += `<tr><td colspan="${roles.length + 1}" style="padding:0.65rem 0.75rem;font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;color:var(--sb-muted);background:var(--sidebar-bg);border-bottom:2px solid var(--sb-sep)">${group.label}</td></tr>`;
+        group.items.forEach(item => {
+          const cells = roles.map(r => {
+            const has     = roleHasAccess(r, item.id);
+            const checked = has ? 'checked' : '';
+            const locked  = r === 'it_admin';
+            const dis     = locked ? 'disabled' : '';
+            const cls     = locked ? ' locked' : '';
+            return `<td><label class="perm-toggle${cls}"><input type="checkbox" ${checked} ${dis} data-role="${r}" data-content="${item.id}" class="perm-checkbox"><span class="perm-slider"></span></label></td>`;
+          }).join('');
+          html += `<tr><td>${item.title}</td>${cells}</tr>`;
+        });
+      });
+
+      tbody.innerHTML = html;
+
+      // Wire up toggle saves
+      tbody.querySelectorAll('.perm-checkbox:not([disabled])').forEach(cb => {
+        cb.addEventListener('change', async () => {
+          const roleName  = cb.dataset.role;
+          const itemId    = cb.dataset.content;
+          const ids       = getRoleContentIds(roleName);
+
+          if (cb.checked) {
+            if (!ids.includes(itemId)) ids.push(itemId);
+          } else {
+            const idx = ids.indexOf(itemId);
+            if (idx !== -1) ids.splice(idx, 1);
+          }
+
+          await saveRolePermissions(roleName, ids);
+
+          const status = document.getElementById('permSaveStatus');
+          if (status) {
+            status.textContent = 'Saved';
+            status.style.color = '#5a8c5a';
+            status.classList.add('show');
+            setTimeout(() => status.classList.remove('show'), 1800);
+          }
+        });
+      });
+
+      renderRoleMembers();
+    }
+
+    // ── Render role members list ──────────────────────────────────────────
+    function renderRoleMembers() {
+      const container = document.getElementById('roleMembersList');
+      if (!container) return;
+      container.innerHTML = ROLE_NAMES.map(r => {
+        const members = MEMBERS[r] || [];
+        const label = ROLE_LABELS[r];
+        const count = r === 'staff' ? 'Everyone else' : `${members.length} member${members.length !== 1 ? 's' : ''}`;
+        const list = members.length
+          ? members.map(m => `<div style="font-size:0.78rem;color:var(--sb-muted);padding:0.2rem 0">${m}</div>`).join('')
+          : '<div style="font-size:0.78rem;color:var(--sb-muted);padding:0.2rem 0;font-style:italic">All @rowecasaorganics.com users not listed above</div>';
+        return `<div style="margin-bottom:1.25rem">
+          <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.4rem">
+            <span style="font-size:0.85rem;font-weight:800;color:var(--sb-text)">${label}</span>
+            <span style="font-size:0.68rem;font-weight:600;color:var(--sb-muted)">(${count})</span>
+          </div>
+          ${list}
+        </div>`;
+      }).join('');
+    }
+  </script>
+
+  <!-- Results viewer (IT Admin only) -->
+  <script type="module">
+    import { getApps, getApp }                                    from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { getAuth }                                            from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    import { getFirestore, collection, getDocs, query, orderBy }  from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+    const db = getFirestore(getApps().length ? getApp() : null);
+
+    window._resultsFilter = 'all';
+
+    window.setResultsFilter = function(filter) {
+      window._resultsFilter = filter;
+      document.getElementById('resTabAll').classList.toggle('active', filter === 'all');
+      document.getElementById('resTabSurveys').classList.toggle('active', filter === 'surveys');
+      document.getElementById('resTabForms').classList.toggle('active', filter === 'forms');
+      loadResults();
+    };
+
+    window.loadResults = async function() {
+      const container = document.getElementById('resultsContainer');
+      if (!container) return;
+
+      container.innerHTML = '<div class="empty-state" style="padding:1.5rem 0"><div class="login-spinner" style="margin:1rem auto"></div><p style="color:var(--sb-muted)">Loading results...</p></div>';
+
+      try {
+        const [snap, rockstarsSnap] = await Promise.all([
+          getDocs(collection(db, 'submissions')),
+          getDocs(collection(db, 'rockstars'))
+        ]);
+
+        // Index rockstar photos by month+submitter for lookup
+        window._rockstarPhotos = {};
+        rockstarsSnap.docs.forEach(d => {
+          const r = d.data();
+          const key = (r.submittedBy||'') + '|' + (r.month||'');
+          if (!window._rockstarPhotos[key]) window._rockstarPhotos[key] = [];
+          window._rockstarPhotos[key].push({ name: r.name, quote: r.quote, photo: r.photo || '' });
+        });
+
+        const cfg = window._contentConfig || { surveys: [], forms: [] };
+        const surveyTitles = cfg.surveys.map(s => s.title.toLowerCase());
+        const formTitles   = cfg.forms.map(f => f.title.toLowerCase());
+        const titleFilter  = document.getElementById('resultsFormFilter')?.value || '';
+
+        let docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        docs.sort((a, b) => {
+          const ta = a.submittedAt?.toDate ? a.submittedAt.toDate().getTime() : 0;
+          const tb = b.submittedAt?.toDate ? b.submittedAt.toDate().getTime() : 0;
+          return tb - ta;
+        });
+
+        if (window._resultsFilter === 'surveys') {
+          docs = docs.filter(d => surveyTitles.some(t => (d.title||'').toLowerCase().includes(t)));
+        } else if (window._resultsFilter === 'forms') {
+          docs = docs.filter(d => formTitles.some(t => (d.title||'').toLowerCase().includes(t)));
+        }
+
+        if (titleFilter) {
+          docs = docs.filter(d => (d.title||'').toLowerCase() === titleFilter.toLowerCase());
+        }
+
+        if (!docs.length) {
+          container.innerHTML = '<div class="empty-state" style="padding:2rem 0"><div class="empty-icon">📭</div><p style="color:var(--sb-muted)">No results found for this filter.</p></div>';
+          return;
+        }
+
+        // Group by title
+        const groups = {};
+        docs.forEach(d => {
+          const key = d.title || 'Unknown';
+          if (!groups[key]) groups[key] = [];
+          groups[key].push(d);
+        });
+
+        let html = '<div class="results-count">' + docs.length + ' total submission' + (docs.length !== 1 ? 's' : '') + '</div>';
+
+        // Store docs globally so expand can access them
+        window._resultsDocs = docs;
+
+        for (const [title, items] of Object.entries(groups)) {
+          html += '<div style="margin-bottom:1.5rem">';
+          html += '<div style="font-size:0.92rem;font-weight:800;color:var(--brand-brown);padding:0.6rem 0;border-bottom:2px solid var(--brand-hover-border);margin-bottom:0.5rem">' + escapeHtml(title) + ' <span style="font-weight:600;color:var(--sb-muted);font-size:0.82rem">(' + items.length + ')</span></div>';
+
+          items.forEach((d, idx) => {
+            const date = d.submittedAt?.toDate
+              ? d.submittedAt.toDate().toLocaleString('en-US', { month:'short', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit' })
+              : '—';
+            const hasData = d.formData && Object.keys(d.formData).length > 0;
+            const rowId = 'res_' + d.id;
+
+            html += '<div style="border:1.5px solid var(--sb-border);border-radius:12px;margin-bottom:0.5rem;overflow:hidden">';
+            html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:0.7rem 1rem;cursor:pointer;transition:background 0.15s" onclick="toggleResultDetail(\'' + rowId + '\')" onmouseover="this.style.background=\'var(--brand-soft)\'" onmouseout="this.style.background=\'\'">';
+            html += '<div style="display:flex;flex-direction:column;gap:0.15rem;flex:1;min-width:0">';
+            html += '<div style="font-size:0.85rem;font-weight:700;color:var(--sb-text)">' + escapeHtml(d.userEmail||'—') + '</div>';
+            html += '<div style="font-size:0.78rem;color:var(--sb-muted)">' + escapeHtml(d.dept||'—') + ' · ' + date + '</div>';
+            html += '</div>';
+            if (hasData) {
+              html += '<span style="font-size:0.75rem;color:var(--brand-brown);font-weight:700;flex-shrink:0" id="' + rowId + '_arrow">▶ View Details</span>';
+            } else {
+              html += '<span style="font-size:0.75rem;color:var(--sb-muted);font-style:italic;flex-shrink:0">No form data</span>';
+            }
+            html += '</div>';
+
+            if (hasData) {
+              html += '<div id="' + rowId + '" style="display:none;padding:0.75rem 1rem;border-top:1px solid var(--sb-sep);background:var(--sidebar-bg)">';
+              html += renderFormData(d.formData, d.userEmail, d.dept);
+              html += '</div>';
+            }
+            html += '</div>';
+          });
+
+          html += '</div>';
+        }
+
+        container.innerHTML = html;
+
+      } catch(err) {
+        console.error('Results load error:', err);
+        container.innerHTML = '<div class="empty-state" style="padding:2rem 0"><div class="empty-icon">⚠️</div><h3>Could not load results</h3><p style="color:var(--sb-muted)">' + escapeHtml(err.message) + '</p></div>';
+      }
+    };
+
+    window.toggleResultDetail = function(id) {
+      const el = document.getElementById(id);
+      const arrow = document.getElementById(id + '_arrow');
+      if (!el) return;
+      const showing = el.style.display !== 'none';
+      el.style.display = showing ? 'none' : '';
+      if (arrow) arrow.textContent = showing ? '▶ View Details' : '▼ Hide Details';
+    };
+
+    function renderFormData(data, userEmail, dept) {
+      if (!data) return '';
+      let html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem 1.5rem;font-size:0.82rem">';
+
+      // Look up rockstar photos if this is a rockstars submission
+      let rockstarPhotos = [];
+      if (data.rockstars && window._rockstarPhotos) {
+        const key = (userEmail||'') + '|' + (data.month || dept || '');
+        rockstarPhotos = window._rockstarPhotos[key] || [];
+      }
+
+      for (const [key, val] of Object.entries(data)) {
+        const label = key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
+        // Handle rockstars array specially — show photos
+        if (key === 'rockstars' && Array.isArray(val)) {
+          html += '<div style="grid-column:1/-1;margin-top:0.5rem">';
+          html += '<div style="font-weight:700;color:var(--sb-text);margin-bottom:0.35rem">' + escapeHtml(label) + ' (' + val.length + ')</div>';
+          val.forEach((item, i) => {
+            // Find matching photo from rockstars collection
+            const photoMatch = rockstarPhotos.find(p => p.name === item.name) || {};
+            html += '<div style="background:var(--panel-bg);border:1px solid var(--sb-border);border-radius:10px;padding:0.75rem;margin-bottom:0.5rem;display:flex;gap:0.75rem;align-items:center">';
+            if (photoMatch.photo) {
+              html += '<img src="' + photoMatch.photo + '" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid var(--sb-border);flex-shrink:0"/>';
+            } else {
+              html += '<div style="width:64px;height:64px;border-radius:50%;background:var(--brand-soft);display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:700;color:var(--brand-brown);flex-shrink:0;border:2px solid var(--sb-border)">' + escapeHtml((item.name||'?')[0]) + '</div>';
+            }
+            html += '<div>';
+            html += '<div style="font-weight:700;color:var(--sb-text);font-size:0.88rem">' + escapeHtml(item.name||'') + '</div>';
+            if (item.quote) html += '<div style="color:var(--sb-muted);font-style:italic;margin-top:0.2rem">"' + escapeHtml(item.quote) + '"</div>';
+            html += '</div></div>';
+          });
+          html += '</div>';
+          continue;
+        }
+
+        // Handle other arrays (software lists etc.)
+        if (Array.isArray(val)) {
+          html += '<div style="grid-column:1/-1;margin-top:0.5rem">';
+          html += '<div style="font-weight:700;color:var(--sb-text);margin-bottom:0.35rem">' + escapeHtml(label) + ' (' + val.length + ')</div>';
+          val.forEach((item, i) => {
+            if (typeof item === 'object') {
+              html += '<div style="background:var(--panel-bg);border:1px solid var(--sb-border);border-radius:8px;padding:0.5rem 0.75rem;margin-bottom:0.35rem">';
+              for (const [k, v] of Object.entries(item)) {
+                if (v) {
+                  const subLabel = k.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                  html += '<div><span style="color:var(--sb-muted);font-weight:600">' + escapeHtml(subLabel) + ':</span> ' + escapeHtml(String(v)) + '</div>';
+                }
+              }
+              html += '</div>';
+            } else {
+              html += '<div style="color:var(--sb-text)">' + escapeHtml(String(item)) + '</div>';
+            }
+          });
+          html += '</div>';
+          continue;
+        }
+
+        // Skip empty values and internal fields
+        if (!val && val !== 0) continue;
+        if (key === 'submitted_at' || key === 'submitted_by') continue;
+
+        // Long text gets full width
+        const strVal = String(val);
+        const fullWidth = strVal.length > 60;
+
+        html += '<div style="' + (fullWidth ? 'grid-column:1/-1;' : '') + 'padding:0.25rem 0">';
+        html += '<div style="font-weight:600;color:var(--sb-muted);font-size:0.75rem">' + escapeHtml(label) + '</div>';
+        html += '<div style="color:var(--sb-text)">' + escapeHtml(strVal) + '</div>';
+        html += '</div>';
+      }
+
+      html += '</div>';
+      return html;
+    }
+
+    function escapeHtml(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  </script>
+
+  <!-- Roles/Access page builder -->
+  <script type="module">
+    import { CONTENT_CONFIG } from './js/roles.js';
+
+    const accessRows = [
+      ['Login to site',                   true, true, true, true, true],
+      ['View & submit surveys and forms',  true, true, true, true, false],
+      ['View own completed submissions',   true, true, true, true, true],
+      ['View everyone\'s submissions',     true, false, false, false, false],
+      ['Survey & Form Results tab',        true, false, false, false, false],
+      ['Google Sheets tab',                true, false, false, false, false],
+      ['Roles / Access tab',               true, false, false, false, false],
+      ['Contact IT',                       true, true, true, true, true],
+    ];
+
+    const tbody = document.getElementById('accessTableBody');
+    if (tbody) {
+      const yes = '<span style="color:#1aaf72;font-weight:800">Yes</span>';
+      const no  = '<span style="color:var(--sb-muted);font-weight:600">—</span>';
+      accessRows.forEach(row => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td style="padding:0.55rem 0.75rem;border-bottom:1px solid var(--sb-sep);font-weight:600;color:var(--sb-text)">' + row[0] + '</td>'
+          + row.slice(1).map(v => '<td style="text-align:center;padding:0.55rem 0.5rem;border-bottom:1px solid var(--sb-sep)">' + (v ? yes : no) + '</td>').join('');
+        tbody.appendChild(tr);
+      });
+    }
+
+    const roleData = [
+      { role: 'IT Admin', level: 4, color: '#1aaf72', bg: 'rgba(46,204,138,0.15)', members: [
+        'philip@rowecasaorganics.com', 'andrew.neidley@rowecasaorganics.com', 'kasey.tomasek@rowecasaorganics.com',
+        'hayden.howell@rowecasaorganics.com', 'chase.parrish@rowecasaorganics.com'
+      ]},
+      { role: 'Leadership', level: 3, color: 'var(--brand-brown)', bg: 'var(--brand-soft)', members: [
+        'mike@rowecasaorganics.com', 'jill@rowecasaorganics.com', 'alicia@rowecasaorganics.com',
+        'jacob@rowecasaorganics.com', 'chris.paulene@rowecasaorganics.com', 'michael@rowecasaorganics.com',
+        'grant@rowecasaorganics.com', 'ivan.gonzalez@rowecasaorganics.com', 'heidi.partlow@rowecasaorganics.com'
+      ]},
+      { role: 'Director', level: 2, color: 'var(--brand-brown)', bg: 'var(--brand-soft)', members: [
+        'carly@rowecasaorganics.com', 'kristen@rowecasaorganics.com', 'celina.bianco@rowecasaorganics.com',
+        'carissa@rowecasaorganics.com', 'courtneyd@rowecasaorganics.com', 'amanda@rowecasaorganics.com',
+        'lisa@rowecasaorganics.com', 'rachel.neidley@rowecasaorganics.com', 'reylia@rowecasaorganics.com',
+        'darcie.snyder@rowecasaorganics.com', 'laura@rowecasaorganics.com', 'krystle@rowecasaorganics.com',
+        'kevin.ludwig@rowecasaorganics.com', 'cammie.mccarty@rowecasaorganics.com'
+      ]},
+      { role: 'Manager', level: 1, color: 'var(--brand-brown)', bg: 'var(--brand-soft)', members: [
+        'kelsea.berry@rowecasaorganics.com', 'lara@rowecasaorganics.com', 'cassandra.oberembt@rowecasaorganics.com',
+        'amanda.preddy@rowecasaorganics.com', 'brandi@rowecasaorganics.com', 'tonia@rowecasaorganics.com',
+        'mark@rowecasaorganics.com', 'alisha.wilson@rowecasaorganics.com', 'ashley.roberson@rowecasaorganics.com',
+        'kathy.sanford@rowecasaorganics.com', 'morgan.storey@rowecasaorganics.com', 'casey@rowecasaorganics.com',
+        'kaylee@rowecasaorganics.com', 'latasha.harris@rowecasaorganics.com', 'katie@rowecasaorganics.com',
+        'courtney@rowecasaorganics.com', 'treavor.ford@rowecasaorganics.com', 'lexie@rowecasaorganics.com',
+        'jessica@rowecasaorganics.com', 'jc@rowecasaorganics.com', 'keasha@rowecasaorganics.com',
+        'summer@rowecasaorganics.com', 'ryan.churchill@rowecasaorganics.com', 'krystle@rowecasaorganics.com',
+        'kacie@rowecasaorganics.com', 'leah.gideon@rowecasaorganics.com', 'emily.seaman@rowecasaorganics.com',
+        'graceh@rowecasaorganics.com', 'emma.parrish@rowecasaorganics.com'
+      ]},
+      { role: 'Staff', level: 0, color: 'var(--sb-muted)', bg: 'var(--sidebar-bg)', members: [] },
+    ];
+
+    const list = document.getElementById('roleMembersList');
+    if (list) {
+      let html = '';
+      roleData.forEach(r => {
+        html += '<div style="background:var(--sidebar-bg);border:1.5px solid var(--sb-border);border-radius:12px;padding:1rem 1.25rem;margin-bottom:0.75rem">';
+        html += '<div style="display:flex;align-items:center;gap:0.65rem;margin-bottom:0.65rem">';
+        html += '<span style="font-size:0.68rem;font-weight:800;padding:0.22rem 0.65rem;border-radius:999px;letter-spacing:0.04em;text-transform:uppercase;background:' + r.bg + ';color:' + r.color + '">' + r.role + '</span>';
+        html += '<span style="font-size:0.75rem;color:var(--sb-muted);font-weight:600">Level ' + r.level + ' · ' + (r.members.length || 'All other @rowecasaorganics.com users') + (r.members.length ? ' member' + (r.members.length !== 1 ? 's' : '') : '') + '</span>';
+        html += '</div>';
+        if (r.members.length) {
+          html += '<div style="display:flex;flex-wrap:wrap;gap:0.35rem">';
+          r.members.forEach(m => {
+            const name = m.split('@')[0].replace(/\./g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+            html += '<span style="font-size:0.72rem;font-weight:600;background:var(--panel-bg);border:1px solid var(--sb-border);border-radius:6px;padding:0.25rem 0.55rem;color:var(--sb-text)" title="' + m + '">' + name + '</span>';
+          });
+          html += '</div>';
+        } else {
+          html += '<div style="font-size:0.78rem;color:var(--sb-muted);font-style:italic">Any @rowecasaorganics.com email not listed above. Can log in and contact IT, but cannot access surveys or forms.</div>';
+        }
+        html += '</div>';
+      });
+      list.innerHTML = html;
+    }
+  </script>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

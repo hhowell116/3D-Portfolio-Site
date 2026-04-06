@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hayden Howell - Resume</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    color: #1a1a2e;
+    background: #fff;
+    font-size: 10.5pt;
+    line-height: 1.45;
+  }
+
+  .page {
+    width: 8.5in;
+    min-height: 11in;
+    margin: 0 auto;
+    padding: 0.5in 0.6in;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 2.5px solid #2d2d6b;
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+  }
+
+  .header-left h1 {
+    font-size: 26pt;
+    font-weight: 700;
+    color: #2d2d6b;
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+  }
+
+  .header-left .title {
+    font-size: 12pt;
+    font-weight: 500;
+    color: #555;
+    margin-top: 2px;
+  }
+
+  .header-right {
+    text-align: right;
+    font-size: 9.5pt;
+    color: #444;
+    line-height: 1.6;
+  }
+
+  .header-right a {
+    color: #2d2d6b;
+    text-decoration: none;
+  }
+
+  /* Section */
+  .section {
+    margin-bottom: 14px;
+  }
+
+  .section-title {
+    font-size: 11pt;
+    font-weight: 700;
+    color: #2d2d6b;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    border-bottom: 1.5px solid #e0e0e0;
+    padding-bottom: 3px;
+    margin-bottom: 8px;
+  }
+
+  /* Experience entries */
+  .entry {
+    margin-bottom: 10px;
+  }
+
+  .entry-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+
+  .entry-title {
+    font-size: 10.5pt;
+    font-weight: 600;
+    color: #1a1a2e;
+  }
+
+  .entry-date {
+    font-size: 9.5pt;
+    color: #666;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .entry-subtitle {
+    font-size: 10pt;
+    color: #555;
+    font-style: italic;
+    margin-bottom: 3px;
+  }
+
+  .entry-location {
+    font-size: 9pt;
+    color: #777;
+    margin-bottom: 3px;
+  }
+
+  ul {
+    padding-left: 18px;
+    margin-top: 3px;
+  }
+
+  li {
+    margin-bottom: 2px;
+    color: #333;
+  }
+
+  /* Skills */
+  .skills-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px 30px;
+  }
+
+  .skill-category {
+    margin-bottom: 4px;
+  }
+
+  .skill-label {
+    font-weight: 600;
+    color: #2d2d6b;
+    font-size: 9.5pt;
+  }
+
+  .skill-items {
+    color: #444;
+    font-size: 9.5pt;
+  }
+
+  /* Projects */
+  .project-entry {
+    margin-bottom: 6px;
+  }
+
+  .project-name {
+    font-weight: 600;
+    color: #1a1a2e;
+  }
+
+  .project-desc {
+    color: #444;
+    font-size: 9.5pt;
+  }
+
+  .project-tech {
+    color: #666;
+    font-size: 9pt;
+    font-style: italic;
+  }
+
+  /* Education */
+  .edu-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <h1>Hayden Howell</h1>
+      <div class="title">IT Specialist &amp; Software Developer</div>
+    </div>
+    <div class="header-right">
+      hhowell403@gmail.com<br>
+      New Boston, TX<br>
+      <a href="https://github.com/hhowell116">github.com/hhowell116</a><br>
+      <a href="https://hayden-howell-portfolio.web.app">hayden-howell-portfolio.web.app</a>
+    </div>
+  </div>
+
+  <!-- Summary -->
+  <div class="section">
+    <div class="section-title">Summary</div>
+    <p>IT Specialist and Computer Science graduate with hands-on experience in ERP implementations, systems administration, and building data-driven web applications. Proven ability to bridge IT infrastructure and business operations — from deploying real-time analytics dashboards on production floors to managing enterprise-wide technology migrations. Skilled in AI-assisted development using Claude Code CLI, prompt engineering, and multi-agent orchestration with Paperclip framework. Strong background in data visualization, API integration, and turning raw operational data into actionable business insights.</p>
+  </div>
+
+  <!-- Experience -->
+  <div class="section">
+    <div class="section-title">Experience</div>
+
+    <div class="entry">
+      <div class="entry-header">
+        <span class="entry-title">IT Specialist</span>
+        <span class="entry-date">Aug 2025 – Present</span>
+      </div>
+      <div class="entry-subtitle">Rowe Casa Organics &nbsp;·&nbsp; Full-time</div>
+      <div class="entry-location">New Boston, TX &nbsp;·&nbsp; On-site</div>
+      <ul>
+        <li>Supported company-wide DEACOM ERP rollout, configuring workflows and training departments on system usage.</li>
+        <li>Deployed and managed Intune-configured scanners integrated with DEACOM ERP.</li>
+        <li>Built HTML/JavaScript dashboards using ShipStation and Shopify APIs, displaying real-time operational metrics on production-floor monitors.</li>
+        <li>Managed day-to-day IT operations, ticketing, RMM platforms, MDM (Microsoft Intune), and physical security systems.</li>
+        <li>Completed Google Workspace to Microsoft 365 migration with Active Directory–based user provisioning.</li>
+        <li>Leveraged Claude Code CLI for AI-assisted development, accelerating dashboard and internal tool delivery.</li>
+        <li>Architected multi-agent AI workflows using Paperclip orchestration framework with specialized Claude-powered agents for research, development, QA, and documentation.</li>
+      </ul>
+    </div>
+
+    <div class="entry">
+      <div class="entry-header">
+        <span class="entry-title">Data Entry Specialist</span>
+        <span class="entry-date">Jan 2024 – Feb 2025</span>
+      </div>
+      <div class="entry-subtitle">Michigan Health Information Network Shared Services (MiHIN) &nbsp;·&nbsp; Internship</div>
+      <div class="entry-location">Texarkana, TX &nbsp;·&nbsp; Remote</div>
+      <ul>
+        <li>Maintained data accuracy and organized large data sets in Excel for healthcare information systems.</li>
+        <li>Used SQL to query and validate data in support of statewide health information exchange.</li>
+        <li>Collaborated across teams using HubSpot and Jira to ensure consistent data reporting and task tracking.</li>
+      </ul>
+    </div>
+
+    <div class="entry">
+      <div class="entry-header">
+        <span class="entry-title">Customer Engagement Team</span>
+        <span class="entry-date">Jan 2023 – Jan 2024</span>
+      </div>
+      <div class="entry-subtitle">Michigan Health Information Network Shared Services (MiHIN) &nbsp;·&nbsp; Internship</div>
+      <div class="entry-location">Texarkana, TX &nbsp;·&nbsp; Remote</div>
+      <ul>
+        <li>Acted as liaison between MiHIN and healthcare organizations to facilitate secure data exchange.</li>
+        <li>Created and managed communication pathways using destination strings.</li>
+        <li>Onboarded and decommissioned organizations via Jira tickets and HubSpot.</li>
+        <li>Collected data for Root Cause Analysis (RCA) requests to resolve internal issues.</li>
+      </ul>
+    </div>
+
+    <div class="entry">
+      <div class="entry-header">
+        <span class="entry-title">Graphic Design Marketing Intern</span>
+        <span class="entry-date">Jun 2021 – Dec 2022</span>
+      </div>
+      <div class="entry-subtitle">Better Homes and Gardens Real Estate &nbsp;·&nbsp; Internship</div>
+      <div class="entry-location">Texarkana, TX &nbsp;·&nbsp; On-site</div>
+      <ul>
+        <li>Designed promotional materials targeting key real estate demographics.</li>
+        <li>Collaborated with agents to develop branding materials and client outreach content.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Projects -->
+  <div class="section">
+    <div class="section-title">Projects</div>
+
+    <div class="project-entry">
+      <span class="project-name">RCO Metrics Dashboard</span> — <span class="project-desc">Internal operations dashboard with fulfillment KPI tracking, shipping leaderboards, order trends, and international order maps. TV mode for warehouse display.</span><br>
+      <span class="project-tech">JavaScript, Chart.js, Firebase Auth, Google Sheets API</span>
+    </div>
+
+    <div class="project-entry">
+      <span class="project-name">IT Help Portal</span> — <span class="project-desc">Internal IT portal with department-specific technology surveys, onboarding/offboarding forms, and Firestore-backed submission tracking.</span><br>
+      <span class="project-tech">JavaScript, Firebase, Google Apps Script</span>
+    </div>
+
+    <div class="project-entry">
+      <span class="project-name">ShipStation Leaderboard</span> — <span class="project-desc">Daily shipping leaderboard ranking warehouse employees by fulfillment performance, optimized for wall-mounted TV display.</span><br>
+      <span class="project-tech">HTML, CSS Grid, Google Sheets</span>
+    </div>
+
+    <div class="project-entry">
+      <span class="project-name">CMYK Color Analyzer</span> — <span class="project-desc">Image color analysis tool with CMYK composition charts, color frequency grids, and channel isolation previews.</span><br>
+      <span class="project-tech">React, Chart.js, Canvas API</span>
+    </div>
+
+    <div class="project-entry">
+      <span class="project-name">HR Admin Control Panel</span> — <span class="project-desc">Admin dashboard for managing employee recognition content and internal HR TV displays.</span><br>
+      <span class="project-tech">JavaScript, Firebase, Firestore</span>
+    </div>
+
+    <div class="project-entry">
+      <span class="project-name">Mileage Tracker</span> — <span class="project-desc">Full-stack mileage tracking app with Flask REST API backend and React/Tailwind frontend.</span><br>
+      <span class="project-tech">Python, Flask, React, Tailwind CSS</span>
+    </div>
+
+    <div class="project-entry">
+      <span class="project-name">3D Portfolio Site</span> — <span class="project-desc">Interactive portfolio with 3D models, animated sections, and contact form. Deployed on Firebase.</span><br>
+      <span class="project-tech">React, Three.js, Framer Motion, Tailwind CSS</span>
+    </div>
+  </div>
+
+  <!-- Skills -->
+  <div class="section">
+    <div class="section-title">Technical Skills</div>
+    <div class="skills-grid">
+      <div class="skill-category">
+        <span class="skill-label">Languages:</span>
+        <span class="skill-items">JavaScript, Python, SQL, HTML, CSS, TypeScript</span>
+      </div>
+      <div class="skill-category">
+        <span class="skill-label">Frameworks & Libraries:</span>
+        <span class="skill-items">React, Node.js, Electron, Flask, Tailwind CSS, Three.js, Chart.js</span>
+      </div>
+      <div class="skill-category">
+        <span class="skill-label">Platforms & Tools:</span>
+        <span class="skill-items">Firebase, Git, Docker, Vite, Figma, Jira, HubSpot</span>
+      </div>
+      <div class="skill-category">
+        <span class="skill-label">AI & Automation:</span>
+        <span class="skill-items">Claude Code CLI, Prompt Engineering, Paperclip Multi-Agent Orchestration, AI-Assisted Development</span>
+      </div>
+      <div class="skill-category">
+        <span class="skill-label">IT & Infrastructure:</span>
+        <span class="skill-items">Microsoft Intune, Active Directory, Microsoft 365, DEACOM ERP, RMM, MDM</span>
+      </div>
+      <div class="skill-category">
+        <span class="skill-label">Data & APIs:</span>
+        <span class="skill-items">Shopify API, ShipStation API, Google Apps Script, Data Visualization, ETL, Excel</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Education -->
+  <div class="section">
+    <div class="section-title">Education</div>
+    <div class="entry">
+      <div class="edu-header">
+        <span class="entry-title">Bachelor of Science in Computer Science</span>
+        <span class="entry-date">Aug 2021 – May 2025</span>
+      </div>
+      <div class="entry-subtitle">Texas A&M University – Texarkana</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

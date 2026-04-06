@@ -1,0 +1,92 @@
+  ---
+  1. js/roles.js — the role system (above)
+
+  ---
+  2. Loading permissions from Firebase + applying access (in your main page's auth callback):
+
+  // Load permissions from Firebase (override roles.js defaults)
+  try {
+    const db = getDatabase(app);
+    const permSnap = await get(ref(db, 'permissions'));
+    if (permSnap.exists()) {
+      const saved = permSnap.val();
+      for (const [roleName, config] of Object.entries(saved)) {
+        if (RCO_ROLES.roles[roleName]) {
+          if (config.dashboards) RCO_ROLES.roles[roleName].dashboards = config.dashboards;
+          if (config.canSeeRevenue !== undefined) RCO_ROLES.roles[roleName].canSeeRevenue =
+  config.canSeeRevenue;
+        }
+      }
+    }
+  } catch(e) { /* use defaults */ }
+
+  // Show/hide tabs based on role
+  document.querySelectorAll('.nav-btn[data-tab]').forEach(btn => {
+    const tab = btn.dataset.tab;
+    btn.style.display = RCO_ROLES.canAccess(email, tab) ? 'block' : 'none';
+  });
+  document.querySelector('.sidebar-nav')?.classList.add('loaded');
+
+  ---
+  3. Admin panel toggle switches (renders the table + saves to Firebase on toggle):
+
+  // Render permissions table with toggles
+  const dashboards = [
+    { id: 'fulfillment', name: 'Fulfillment KPI' },
+    { id: 'shipping', name: 'Shipping' },
+    // ... add your dashboards
+  ];
+  const roleNames = ['IT Admin', 'C-Suite', 'Director', 'Supervisor', 'Employee'];
+
+  permBody.innerHTML = dashboards.map(d => {
+    const cells = roleNames.map(r => {
+      const config = RCO_ROLES.roles[r];
+      const has = config.dashboards.includes('all') || config.dashboards.includes(d.id);
+      const checked = has ? 'checked' : '';
+      return `<td><label class="perm-toggle"><input type="checkbox" ${checked} data-role="${r}"
+  data-dash="${d.id}" class="perm-checkbox"><span class="perm-slider"></span></label></td>`;
+    }).join('');
+    return `<tr><td class="perm-dashboard">${d.name}</td>${cells}</tr>`;
+  }).join('');
+
+  // Wire up toggles to save to Firebase
+  document.querySelectorAll('.perm-checkbox').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const role = cb.dataset.role;
+      const dash = cb.dataset.dash;
+      const config = RCO_ROLES.roles[role];
+      if (!config || role === 'IT Admin') { cb.checked = true; return; }
+      if (cb.checked) {
+        if (!config.dashboards.includes(dash)) config.dashboards.push(dash);
+      } else {
+        config.dashboards = config.dashboards.filter(d => d !== dash);
+      }
+      set(ref(db, `permissions/${role}/dashboards`), config.dashboards);
+    });
+  });
+
+  ---
+  4. CSS for toggle switches:
+
+  /* Hide nav buttons until permissions load */
+  .sidebar-nav { display: none; }
+  .sidebar-nav.loaded { display: flex; }
+  .nav-btn { display: none; }
+
+  /* Toggle switches */
+  .perm-toggle {
+    position: relative; display: inline-block; width: 36px; height: 20px; cursor: pointer;
+  }
+  .perm-toggle input { opacity: 0; width: 0; height: 0; }
+  .perm-slider {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: #d7d1ca; border-radius: 20px; transition: 0.2s;
+  }
+  .perm-slider:before {
+    content: ""; position: absolute; height: 14px; width: 14px;
+    left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.2s;
+  }
+  .perm-toggle input:checked + .perm-slider { background: #5a8c5a; }
+  .perm-toggle input:checked + .perm-slider:before { transform: translateX(16px); }
+
+  That's the full system — roles.js for defaults, Firebase for persistence, toggles for admin control.

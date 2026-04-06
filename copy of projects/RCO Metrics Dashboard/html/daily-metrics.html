@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Metrics - RCO</title>
+<link rel="stylesheet" href="../css/main.css">
+</head>
+
+<body class="page-daily-metrics">
+
+<div class="dm-container">
+
+  <div class="dm-header">
+    <div class="dm-header-center" style="flex:1; text-align:center;">
+      <h1>Daily Metrics</h1>
+      <div class="dm-meta" id="lastUpdated">Loading...</div>
+    </div>
+    <button class="fullscreen-btn" id="fullscreenBtn" title="Fullscreen" aria-label="Fullscreen">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M9 4H4v5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M15 4h5v5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M9 20H4v-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M15 20h5v-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="dm-content">
+
+    <!-- Retail Column -->
+    <div class="dm-column">
+      <div class="dm-column-title">Retail</div>
+
+      <div class="dm-stats-grid">
+        <div class="dm-stat-card dm-stat-wide">
+          <div class="dm-stat-label">Sales</div>
+          <div class="dm-stat-value" id="retailSales">--</div>
+        </div>
+        <div class="dm-stat-card">
+          <div class="dm-stat-label">Total Orders</div>
+          <div class="dm-stat-value" id="retailOrders">--</div>
+        </div>
+        <div class="dm-stat-card">
+          <div class="dm-stat-label">Unfulfilled</div>
+          <div class="dm-stat-value dm-stat-warn" id="retailUnfulfilled">--</div>
+        </div>
+        <div class="dm-stat-card">
+          <div class="dm-stat-label">Fulfilled</div>
+          <div class="dm-stat-value dm-stat-good" id="retailFulfilled">--</div>
+        </div>
+        <div class="dm-stat-card">
+          <div class="dm-stat-label">AOV</div>
+          <div class="dm-stat-value" id="retailAOV">--</div>
+        </div>
+        <div class="dm-stat-card">
+          <div class="dm-stat-label">Units Sold</div>
+          <div class="dm-stat-value" id="retailUnits">--</div>
+        </div>
+        <div class="dm-stat-card">
+          <div class="dm-stat-label">Avg Rev / Unit</div>
+          <div class="dm-stat-value" id="retailRPU">--</div>
+        </div>
+      </div>
+
+      <div class="dm-products-card">
+        <div class="dm-products-title">Top Selling Products</div>
+        <div class="dm-products-list" id="retailProducts">
+          <div class="dm-loading">Loading...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Wholesale Column (placeholder until API key obtained) -->
+    <div class="dm-column dm-column-disabled">
+      <div class="dm-column-title">Wholesale</div>
+
+      <div class="dm-stats-grid">
+        <div class="dm-stat-card dm-stat-wide">
+          <div class="dm-stat-label">Sales</div>
+          <div class="dm-stat-value" id="wholesaleSales">--</div>
+        </div>
+        <div class="dm-stat-card">
+          <div class="dm-stat-label">Total Orders</div>
+          <div class="dm-stat-value" id="wholesaleOrders">--</div>
+        </div>
+        <div class="dm-stat-card">
+          <div class="dm-stat-label">Unfulfilled</div>
+          <div class="dm-stat-value" id="wholesaleUnfulfilled">--</div>
+        </div>
+        <div class="dm-stat-card">
+          <div class="dm-stat-label">Fulfilled</div>
+          <div class="dm-stat-value" id="wholesaleFulfilled">--</div>
+        </div>
+        <div class="dm-stat-card">
+          <div class="dm-stat-label">AOV</div>
+          <div class="dm-stat-value" id="wholesaleAOV">--</div>
+        </div>
+        <div class="dm-stat-card">
+          <div class="dm-stat-label">Units Sold</div>
+          <div class="dm-stat-value" id="wholesaleUnits">--</div>
+        </div>
+        <div class="dm-stat-card">
+          <div class="dm-stat-label">Avg Rev / Unit</div>
+          <div class="dm-stat-value" id="wholesaleRPU">--</div>
+        </div>
+      </div>
+
+      <div class="dm-products-card">
+        <div class="dm-products-title">Top Selling Products</div>
+        <div class="dm-products-list" id="wholesaleProducts">
+          <div class="dm-pending">Loading...</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const API_BASE = "https://rco-metrics.hayden-howell.workers.dev";
+
+async function loadDailyMetrics() {
+  try {
+    const res = await fetch(`${API_BASE}/daily-metrics`);
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    const data = await res.json();
+
+    const r = data.retail || {};
+
+    document.getElementById('retailSales').textContent = '$' + (r.sales || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    document.getElementById('retailOrders').textContent = (r.totalOrders || 0).toLocaleString();
+    document.getElementById('retailUnfulfilled').textContent = (r.unfulfilled || 0).toLocaleString();
+    document.getElementById('retailFulfilled').textContent = (r.fulfilled || 0).toLocaleString();
+    document.getElementById('retailAOV').textContent = '$' + (r.aov || 0).toFixed(2);
+    document.getElementById('retailUnits').textContent = (r.unitsSold || 0).toLocaleString();
+    const rRPU = r.unitsSold > 0 ? (r.sales || 0) / r.unitsSold : 0;
+    document.getElementById('retailRPU').textContent = '$' + rRPU.toFixed(2);
+
+    // Top products
+    const prodList = document.getElementById('retailProducts');
+    if (r.topProducts && r.topProducts.length > 0) {
+      prodList.innerHTML = r.topProducts.map((p, i) => `
+        <div class="dm-product-row">
+          <span class="dm-product-name">${p.name}</span>
+          <span class="dm-product-qty">${p.qty}</span>
+        </div>
+      `).join('');
+    } else {
+      prodList.innerHTML = '<div class="dm-pending">No data yet today</div>';
+    }
+
+    // Wholesale (if available)
+    const w = data.wholesale || {};
+    if (w.totalOrders) {
+      document.querySelector('.dm-column-disabled')?.classList.remove('dm-column-disabled');
+      document.getElementById('wholesaleSales').textContent = '$' + (w.sales || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+      document.getElementById('wholesaleOrders').textContent = (w.totalOrders || 0).toLocaleString();
+      document.getElementById('wholesaleUnfulfilled').textContent = (w.unfulfilled || 0).toLocaleString();
+      document.getElementById('wholesaleFulfilled').textContent = (w.fulfilled || 0).toLocaleString();
+      document.getElementById('wholesaleAOV').textContent = '$' + (w.aov || 0).toFixed(2);
+      document.getElementById('wholesaleUnits').textContent = (w.unitsSold || 0).toLocaleString();
+      const wRPU = w.unitsSold > 0 ? (w.sales || 0) / w.unitsSold : 0;
+      document.getElementById('wholesaleRPU').textContent = '$' + wRPU.toFixed(2);
+
+      const wProdList = document.getElementById('wholesaleProducts');
+      if (w.topProducts && w.topProducts.length > 0) {
+        wProdList.innerHTML = w.topProducts.map(p => `
+          <div class="dm-product-row">
+            <span class="dm-product-name">${p.name}</span>
+            <span class="dm-product-qty">${p.qty}</span>
+          </div>
+        `).join('');
+      }
+    }
+
+    const now = new Date();
+    document.getElementById('lastUpdated').textContent =
+      `Today, ${now.toLocaleDateString('en-US', {month: 'long', day: 'numeric', year: 'numeric'})} | Updated ${now.toLocaleTimeString('en-US', {hour: 'numeric', minute: '2-digit'})}`;
+
+  } catch (e) {
+    console.error('Failed to load daily metrics:', e);
+    document.getElementById('lastUpdated').textContent = 'Error loading data';
+  }
+}
+
+loadDailyMetrics();
+setInterval(loadDailyMetrics, 10 * 60 * 1000); // Refresh every 10 minutes
+
+// Fullscreen
+const fsBtn = document.getElementById('fullscreenBtn');
+if (fsBtn) {
+  fsBtn.addEventListener('click', async () => {
+    try {
+      if (!document.fullscreenElement) await document.documentElement.requestFullscreen();
+      else await document.exitFullscreen();
+    } catch (e) {}
+  });
+}
+
+// Theme
+window.addEventListener('message', (event) => {
+  if (event.data?.type === 'RCO_THEME') {
+    document.body.classList.toggle('dark', event.data.theme === 'dark');
+  }
+});
+
+window.addEventListener('message', (event) => {
+  if (event.data?.type === 'TV_VIEW_STATE') {
+    document.body.classList.toggle('tv-view-active', event.data.active);
+  }
+  if (event.data?.type === 'RCO_REVENUE_ACCESS' && !event.data.canSeeRevenue) {
+    document.querySelectorAll('#retailSales, #retailAOV, #retailRPU, #wholesaleSales, #wholesaleAOV, #wholesaleRPU').forEach(el => {
+      el.textContent = 'Restricted';
+      el.style.fontSize = '0.7em';
+      el.style.color = '#8d8173';
+    });
+  }
+});
+</script>
+
+</body>
+</html>

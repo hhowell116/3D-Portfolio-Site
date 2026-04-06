@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Daily ShipStation Leaderboard</title>
+  <link rel="stylesheet" href="../css/main.css">
+</head>
+<body class="page-shipping">
+  <div class="wrap">
+    <div class="header" role="banner">
+
+  <div class="header-center">
+    <div class="title">Today's Shipping Leaderboard</div>
+    <div id="weekRange" class="meta">Week: loading...</div>
+  </div>
+
+  <button class="fullscreen-btn" id="fullscreenBtn" title="Fullscreen" aria-label="Fullscreen">
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M9 4H4v5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M15 4h5v5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M9 20H4v-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M15 20h5v-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button>
+
+</div>
+
+    <div id="boards" class="boards" aria-live="polite">
+      <div class="notice">Loading data...</div>
+    </div>
+  </div>
+
+  <div id="debug" style="display:none"></div>
+
+<script>
+(async function(){
+  const SHEET_ID = '1-S1OU7nw_085IXVbfiOY5qDPuRcPx2RqQJg8pnOqU9I';
+  const GID = '165470098';
+  const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
+
+window.addEventListener('message', (event) => {
+  if (event.data?.type === 'TV_VIEW_STATE') {
+    document.body.classList.toggle('tv-view-active', event.data.active);
+  }
+});
+
+  const debugEl = document.getElementById('debug');
+  function log(msg, isError = false){
+    console.log(msg);
+    if(debugEl){
+      debugEl.classList.add('show');
+      debugEl.innerHTML += `<div style="color:${isError?'#f00':'#0f0'}">${new Date().toLocaleTimeString()}: ${msg}</div>`;
+    }
+  }
+
+  log(`Starting load from: ${CSV_URL}`);
+
+  function parseCSV(text){
+    const rows = [];
+    const lines = text.replace(/\r\n/g,'\n').split('\n');
+    for(const line of lines){
+      const row = [];
+      let cur = '';
+      let inQuotes = false;
+      for(let i=0;i<line.length;i++){
+        const ch = line[i];
+        if(ch === '"' ){
+          if(inQuotes && line[i+1] === '"'){ cur += '"'; i++; continue; }
+          inQuotes = !inQuotes;
+          continue;
+        }
+        if(ch === ',' && !inQuotes){
+          row.push(cur);
+          cur = '';
+          continue;
+        }
+        cur += ch;
+      }
+      row.push(cur);
+      rows.push(row);
+    }
+    return rows;
+  }
+
+  async function fetchCSV(){
+    log('Fetching CSV...');
+    const res = await fetch(CSV_URL);
+    log(`Fetch response status: ${res.status}`);
+    if(!res.ok) throw new Error('Failed to load sheet. Status: '+res.status);
+    const txt = await res.text();
+    log(`Received ${txt.length} characters`);
+    return parseCSV(txt);
+  }
+
+  function findMeta(grid){
+    for(let r=0;r<8 && r<grid.length;r++){
+      const text = (grid[r] || []).join(' ').trim();
+      if(!text) continue;
+      if(/week[:\s]/i.test(text) || /\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b/i.test(text)){
+        return {row:r, text};
+      }
+    }
+    return null;
+  }
+
+  function findRankHeaders(grid){
+    const headers = [];
+    for(let r=0;r<12 && r<grid.length;r++){
+      for(let c=0;c<(grid[r]||[]).length;c++){
+        const cell = ((grid[r]||[])[c]||'').toString().trim().toLowerCase();
+        if(cell === 'rank') headers.push({row:r,col:c});
+      }
+    }
+    return headers;
+  }
+
+  function extractBlock(grid, header){
+    const out = [];
+    const start = header.row + 1;
+    const col = header.col;
+    let empties = 0;
+    for(let r=start;r<grid.length;r++){
+      const row = grid[r] || [];
+      const rank = (row[col] || '').toString().trim();
+      const employee = (row[col+1] || '').toString().trim();
+      const products = (row[col+2] || '').toString().trim();
+      const orders = (row[col+3] || '').toString().trim();
+      const avg = (row[col+4] || '').toString().trim();
+      if(!rank && !employee && !products && !orders && !avg){
+        empties++;
+        if(empties>=3) break;
+        else continue;
+      }
+      if(employee && (products || orders)) {
+        out.push({rank, employee, products, orders, avg});
+      }
+    }
+    return out;
+  }
+
+  function nice(x){
+    if(!x) return '';
+    const n = Number(x.toString().replace(/[,]/g,''));
+    return Number.isFinite(n) ? n.toLocaleString() : x;
+  }
+
+  function buildCard(title,color,rows){
+    const head = `<div class="card-head">${title.toUpperCase()}</div>`;
+
+    const validRows = rows.filter(r => {
+      const hasEmployee = r.employee && r.employee.trim() !== '';
+      const hasOrders = r.orders && r.orders !== '0' && r.orders.trim() !== '';
+      const hasProducts = r.products && r.products !== '0' && r.products.trim() !== '';
+      return hasEmployee && (hasOrders || hasProducts);
+    });
+
+    if(!validRows || validRows.length === 0) {
+      return `<div class="card" style="display:none;" data-category="${title}"></div>`;
+    }
+
+    const rowsHtml = validRows.map((r,idx)=>{
+      const cls = idx===0? 'medal-gold' : idx===1? 'medal-silver' : idx===2? 'medal-bronze' : '';
+      const displayRank = (idx + 1).toString();
+      const fullName = (r.employee || '').trim();
+      let employeeName = fullName;
+      if(fullName.length > 15) {
+        const nameParts = fullName.split(/\s+/);
+        if(nameParts.length >= 2) {
+          const firstName = nameParts.slice(0, -1).join(' ');
+          const lastName = nameParts[nameParts.length - 1];
+          employeeName = `${firstName}<br>${lastName}`;
+        }
+      }
+      return `<tr class="${cls}"><td class="col-rank">${displayRank}</td><td class="col-employee">${employeeName}</td><td class="col-prod">${nice(r.products)}</td><td class="col-orders">${nice(r.orders)}</td><td class="col-avg">${r.avg||''}</td></tr>`;
+    }).join('');
+
+    return `
+      <div class="card" data-category="${title}">
+        ${head}
+        <div class="card-body">
+          <div class="table-container">
+            <table class="header-table">
+              <thead>
+                <tr>
+                  <th class="col-rank">Rank</th>
+                  <th class="col-employee">Employee</th>
+                  <th class="col-prod">Products</th>
+                  <th class="col-orders">Orders</th>
+                  <th class="col-avg">Avg<br>Item/Order</th>
+                </tr>
+              </thead>
+            </table>
+            <div class="scroll-wrapper">
+              <div class="scroll-content">
+                <table class="body-table">
+                  <tbody>${rowsHtml}</tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  try{
+    const raw = await fetchCSV();
+    log(`Parsed ${raw.length} rows`);
+
+    const meta = findMeta(raw);
+    if(meta) {
+      document.getElementById('weekRange').textContent = meta.text.replace(/\s{2,}/g,' ').trim();
+      log(`Found meta: ${meta.text}`);
+    }
+
+    const headers = findRankHeaders(raw);
+    log(`Found ${headers.length} rank headers at: ${JSON.stringify(headers)}`);
+
+    let chosen = headers.slice(0,3);
+    if(chosen.length < 3){
+      log('Using fallback header positions');
+      const fallback = [{row:3,col:1},{row:3,col:7},{row:3,col:13}];
+      chosen = fallback.slice(0,3);
+    }
+
+    chosen.sort((a,b)=>a.col - b.col);
+
+    const cats = ['Full-time','Part-Time','Wholesale'];
+    const cols = {'Full-time':'var(--tan-light)','Part-Time':'var(--tan-light)','Wholesale':'var(--tan-light)'};
+    const boards = document.getElementById('boards');
+    boards.innerHTML = '';
+
+    for(let i=0;i<3;i++){
+      const h = chosen[i];
+      const rows = h ? extractBlock(raw,h) : [];
+      log(`${cats[i]}: extracted ${rows.length} rows from col ${h.col}`);
+      boards.insertAdjacentHTML('beforeend', buildCard(cats[i], cols[cats[i]], rows));
+    }
+
+    const visibleCards = boards.querySelectorAll('.card:not([style*="display:none"])');
+    log(`Visible cards: ${visibleCards.length}`);
+    if(visibleCards.length === 2) {
+      boards.style.gridTemplateColumns = 'repeat(2, 1fr)';
+    } else if(visibleCards.length === 1) {
+      boards.style.gridTemplateColumns = '1fr';
+      visibleCards[0].style.maxWidth = '800px';
+      visibleCards[0].style.margin = '0 auto';
+    }
+
+    function startAutoScrollWhenReady() {
+  let startedAny = false;
+
+  document.querySelectorAll('.scroll-wrapper').forEach(wrapper => {
+    if (wrapper.dataset.started) return;
+
+    const scrollContent = wrapper.querySelector('.scroll-content');
+    if (!scrollContent) return;
+
+    const wrapperHeight = wrapper.getBoundingClientRect().height;
+    const contentHeight = scrollContent.getBoundingClientRect().height;
+
+    if (wrapperHeight === 0 || contentHeight === 0) return;
+    if (contentHeight <= wrapperHeight) return;
+
+    wrapper.dataset.started = 'true';
+    startedAny = true;
+
+    let position = 0;
+    let direction = 1;
+    const scrollSpeed = 30;
+    const maxScroll = contentHeight - wrapperHeight;
+    const pauseDuration = 2500;
+    let lastTime = performance.now();
+    let isPaused = false;
+    let pauseStartTime = 0;
+
+    function animate(currentTime) {
+      if (isPaused) {
+        if (currentTime - pauseStartTime >= pauseDuration) {
+          isPaused = false;
+          lastTime = currentTime;
+        } else {
+          requestAnimationFrame(animate);
+          return;
+        }
+      }
+
+      const deltaTime = (currentTime - lastTime) / 1000;
+      lastTime = currentTime;
+
+      position += scrollSpeed * deltaTime * direction;
+
+      if (direction === 1 && position >= maxScroll) {
+        position = maxScroll;
+        direction = -1;
+        isPaused = true;
+        pauseStartTime = currentTime;
+      } else if (direction === -1 && position <= 0) {
+        position = 0;
+        direction = 1;
+        isPaused = true;
+        pauseStartTime = currentTime;
+      }
+
+      scrollContent.style.transform = `translateY(-${position}px)`;
+      requestAnimationFrame(animate);
+    }
+
+    requestAnimationFrame(animate);
+  });
+
+  if (!startedAny) {
+    requestAnimationFrame(startAutoScrollWhenReady);
+  }
+}
+
+    requestAnimationFrame(startAutoScrollWhenReady);
+
+  } catch(err){
+    log(`ERROR: ${err.message}`, true);
+    console.error(err);
+    document.getElementById('boards').innerHTML = `<div class="notice">Error loading data: ${err.message}</div>`;
+  }
+})();
+
+const fullscreenBtn = document.getElementById('fullscreenBtn');
+
+fullscreenBtn.addEventListener('click', () => {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen();
+  } else {
+    document.exitFullscreen();
+  }
+});
+
+document.addEventListener('fullscreenchange', () => {
+  if (document.fullscreenElement) {
+    fullscreenBtn.classList.add('exit');
+  } else {
+    fullscreenBtn.classList.remove('exit');
+  }
+});
+
+</script>
+  <script>
+window.addEventListener('message', (event) => {
+  if (event.data?.type === 'RCO_THEME') {
+    document.body.classList.toggle('dark', event.data.theme === 'dark');
+  }
+});
+</script>
+</body>
+</html>

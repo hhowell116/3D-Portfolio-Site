@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Skip the Line - RCO</title>
+<link rel="stylesheet" href="../css/main.css">
+</head>
+<body class="page-skip-line">
+<div class="stl-container">
+  <div class="stl-header">
+    <h1>Skip the Line Orders</h1>
+    <div class="stl-meta" id="lastUpdated">Loading...</div>
+    <button class="fullscreen-btn" id="fullscreenBtn" title="Fullscreen" aria-label="Fullscreen">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M9 4H4v5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 4h5v5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 20H4v-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 20h5v-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+
+  <div class="stl-content">
+    <div class="stl-orders-panel">
+      <div class="stl-panel-title">Open Skip the Line Orders</div>
+      <div class="stl-table-wrap">
+        <table class="stl-table">
+          <thead><tr><th>Order</th><th>Date</th><th>Status</th><th>Payment</th></tr></thead>
+          <tbody id="ordersList"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="stl-stats-panel">
+      <div class="stl-stat-card stl-stat-big">
+        <div class="stl-stat-value" id="totalOpen">--</div>
+        <div class="stl-stat-label">Open Skip the Line</div>
+      </div>
+      <div class="stl-stat-card">
+        <div class="stl-stat-value stl-stat-warn" id="newCount">--</div>
+        <div class="stl-stat-label">New (Unfulfilled)</div>
+      </div>
+      <div class="stl-stat-card">
+        <div class="stl-stat-value" id="partialCount">--</div>
+        <div class="stl-stat-label">Partially Fulfilled</div>
+      </div>
+      <div class="stl-stat-card">
+        <div class="stl-stat-value stl-stat-good" id="fulfilledToday">--</div>
+        <div class="stl-stat-label">Fulfilled Today</div>
+      </div>
+
+      <div class="stl-panel-title" style="margin-top:16px;">By Date</div>
+      <div class="stl-date-list" id="dateBreakdown"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_BASE = "https://rco-metrics.hayden-howell.workers.dev";
+
+async function load() {
+  try {
+    const res = await fetch(`${API_BASE}/skip-the-line`);
+    const d = await res.json();
+
+    document.getElementById('totalOpen').textContent = (d.totalOpen || 0).toLocaleString();
+    document.getElementById('newCount').textContent = (d.newUnfulfilled || 0).toLocaleString();
+    document.getElementById('partialCount').textContent = (d.partial || 0).toLocaleString();
+    document.getElementById('fulfilledToday').textContent = (d.fulfilledToday || 0).toLocaleString();
+
+    const tbody = document.getElementById('ordersList');
+    const orders = d.orders || [];
+    tbody.innerHTML = orders.map(o => `
+      <tr>
+        <td><strong>${o.name}</strong></td>
+        <td>${o.date}</td>
+        <td>${o.fulfillment || 'Unfulfilled'}</td>
+        <td>${o.payment}</td>
+      </tr>
+    `).join('') || '<tr><td colspan="4" style="text-align:center;font-style:italic;">No open skip-the-line orders</td></tr>';
+
+    const dateList = document.getElementById('dateBreakdown');
+    const byDate = d.byDate || [];
+    dateList.innerHTML = byDate.map(row => `
+      <div class="stl-date-row">
+        <span class="stl-date-label">${row.date}</span>
+        <span class="stl-date-count">${row.count}</span>
+      </div>
+    `).join('') || '<div class="stl-date-row"><span style="font-style:italic;">No data</span></div>';
+
+    document.getElementById('lastUpdated').textContent = 'Updated ' + new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  } catch(e) { console.error(e); }
+}
+
+load();
+setInterval(load, 10*60*1000);
+
+document.getElementById('fullscreenBtn')?.addEventListener('click', () => {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+  else document.exitFullscreen();
+});
+window.addEventListener('message', e => { if (e.data?.type === 'RCO_THEME') document.body.classList.toggle('dark', e.data.theme === 'dark'); });
+window.addEventListener('message', e => { if (e.data?.type === 'TV_VIEW_STATE') document.body.classList.toggle('tv-view-active', e.data.active); });
+</script>
+</body>
+</html>

@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <title>IT Equipment &amp; Software Request — RCO IT</title>
+  <link rel="stylesheet" href="../css/styles.css"/>
+  <style>
+    :root { --sb-muted: #6a5e57; }
+    html  { font-size: 18px; letter-spacing: 0.01em; }
+    .portal-email-btn {
+      display: block; width: 100%; background: none; border: 1px solid var(--sb-border);
+      border-radius: 8px; padding: 0.4rem 0.6rem; font-size: 0.67rem; color: var(--sb-muted);
+      font-family: inherit; font-weight: 600; cursor: pointer; text-align: center;
+      transition: all 0.18s; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .portal-email-btn:hover { background: var(--brand-soft); border-color: var(--brand-hover-border); color: var(--brand-brown); }
+    .form-wrap { max-width: 640px; }
+    .form-section { margin-bottom: 2rem; }
+    .form-section-title {
+      font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.07em;
+      color: var(--sb-muted); margin-bottom: 0.9rem; padding-bottom: 0.45rem; border-bottom: 1px solid var(--sb-sep);
+    }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.9rem; }
+    @media(max-width:560px){ .form-grid { grid-template-columns: 1fr; } }
+    .span2 { grid-column: 1 / -1; }
+    .field { display: flex; flex-direction: column; gap: 0.32rem; }
+    .field label { font-size: 0.84rem; font-weight: 700; color: var(--sb-text); }
+    .field-note  { font-size: 0.73rem; font-weight: 500; color: var(--sb-muted); }
+    .req { color: #c0392b; }
+    .field input, .field select, .field textarea {
+      background: var(--sidebar-bg); border: 1.5px solid var(--sb-border); border-radius: 9px;
+      padding: 0.6rem 0.85rem; font-size: 0.9rem; font-family: inherit; color: var(--sb-text);
+      outline: none; transition: border-color 0.15s, box-shadow 0.15s; width: 100%;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus {
+      border-color: var(--brand-hover-border); box-shadow: 0 0 0 3px rgba(189,153,121,0.15);
+    }
+    .field textarea { resize: vertical; }
+    .pill-group { display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: center; }
+    .pill-btn {
+      padding: 0.38rem 1rem; border-radius: 999px;
+      border: 1.5px solid var(--sb-border); background: var(--panel-bg);
+      color: var(--sb-text); font-size: 0.85rem; font-weight: 600;
+      font-family: inherit; cursor: pointer; transition: all 0.15s;
+    }
+    .pill-btn:hover    { border-color: var(--brand-hover-border); color: var(--brand-brown); }
+    .pill-btn.selected { background: var(--brand-grad); border-color: var(--brand-brown); color: #fff; }
+    .inline-sub {
+      display: none; align-items: center; gap: 0.35rem;
+      margin-left: 0.15rem;
+    }
+    .inline-sub.show { display: flex; }
+    .inline-sub input {
+      background: rgba(189,153,121,0.1); border: 1.5px solid var(--brand-hover-border);
+      border-radius: 9px; padding: 0.38rem 0.75rem; font-size: 0.85rem;
+      font-family: inherit; color: var(--sb-text); outline: none;
+      width: 200px; transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .inline-sub input:focus {
+      border-color: var(--brand-brown); box-shadow: 0 0 0 3px rgba(189,153,121,0.15);
+    }
+    .check-group { display: flex; flex-wrap: nowrap; gap: 0.45rem; align-items: center; }
+    .check-item {
+      display: flex; align-items: center; gap: 0.4rem;
+      font-size: 0.84rem; color: var(--sb-text); font-weight: 500;
+      background: var(--sidebar-bg); border: 1.5px solid var(--sb-border);
+      border-radius: 8px; padding: 0.35rem 0.75rem; cursor: pointer;
+      transition: border-color 0.15s; user-select: none; white-space: nowrap;
+    }
+    .check-item:hover { border-color: var(--brand-hover-border); }
+    .check-item input[type="checkbox"] { accent-color: var(--brand-brown); cursor: pointer; }
+    .form-footer { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; padding-top: 1.25rem; border-top: 1px solid var(--sb-sep); }
+    .form-status { font-size: 0.84rem; font-weight: 600; padding: 0.55rem 0.9rem; border-radius: 9px; display: none; }
+    .form-status.error   { display: block; background: rgba(220,80,60,0.1); color: #c0392b; border: 1px solid rgba(220,80,60,0.2); }
+    .form-status.success { display: block; background: var(--success-soft); color: var(--success); border: 1px solid rgba(46,204,138,0.25); }
+    .success-screen { display: none; text-align: center; padding: 4rem 2rem; }
+    .success-screen.show { display: block; }
+    .success-screen .s-icon { font-size: 3.5rem; margin-bottom: 1rem; }
+    .success-screen h2 { font-size: 1.3rem; font-weight: 800; color: var(--sb-text); margin-bottom: 0.5rem; }
+    .success-screen p  { font-size: 0.9rem; color: var(--sb-muted); line-height: 1.7; margin-bottom: 1.5rem; }
+    .skip-note {
+      background: var(--sidebar-bg); border: 1.5px solid var(--sb-border);
+      border-radius: 11px; padding: 0.75rem 1.1rem; margin-bottom: 1.75rem;
+      font-size: 0.84rem; color: var(--sb-muted); line-height: 1.55;
+    }
+    .skip-note strong { color: var(--sb-text); }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+
+  <aside class="sidebar">
+    <div class="sidebar-logo-wrap">
+      <img src="../assets/logo.png" alt="Rowe Casa Organics" class="sidebar-logo"/>
+    </div>
+    <div class="sidebar-divider"></div>
+    <nav class="sidebar-nav">
+      <button class="nav-btn" onclick="window.location.href='../index.html'">
+        <span class="nav-icon"></span> Portal Home
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-divider" style="margin-bottom:0.75rem"></div>
+      <button class="contact-btn" onclick="window.location.href='../index.html'">← Back to Portal</button>
+      <button class="portal-email-btn"
+              onclick="window.open('https://mail.google.com/mail/?view=cm&fs=1&to=itsupport%40rowecasaorganics.com','_blank')">
+        ✉️ itsupport@rowecasaorganics.com
+      </button>
+    </div>
+  </aside>
+
+  <div class="main-wrap">
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="topbar-title">IT Equipment &amp; Software Request</div>
+        <div class="topbar-desc">Universal request form for any technology need — with business justification and approval workflow.</div>
+      </div>
+      <div class="topbar-right">
+        <span class="topbar-user" id="topbarUser">Not signed in</span>
+        <button class="sign-btn" id="authBtn">Sign Out</button>
+      </div>
+    </header>
+
+    <main class="content-panel">
+
+      <div class="success-screen" id="successScreen">
+        <div class="s-icon">✅</div>
+        <h2>Request Submitted!</h2>
+        <p>IT will review your request and follow up shortly.<br/>
+           You can view your submission in the <strong>Completed</strong> tab on the portal.</p>
+        <button class="card-action" onclick="window.location.href='../index.html'">← Back to Portal</button>
+      </div>
+
+      <div class="form-wrap" id="formWrap">
+
+        <div class="skip-note">
+          💡 <strong>Not sure about something? No problem!</strong> — IT will work with you to figure out the best solution.
+        </div>
+
+        <!-- ── Section 1: What Do You Need? ── -->
+        <div class="form-section">
+          <div class="form-section-title">What Do You Need?</div>
+          <div class="form-grid">
+
+            <div class="field span2">
+              <label>Request Type <span class="req">*</span></label>
+              <div class="pill-group">
+                <button type="button" class="pill-btn" onclick="setPill('eq_type',this,'Hardware')">Hardware</button>
+                <button type="button" class="pill-btn" onclick="setPill('eq_type',this,'Software / License')">Software / License</button>
+                <button type="button" class="pill-btn" onclick="setPill('eq_type',this,'Access / Permissions')">Access / Permissions</button>
+                <button type="button" class="pill-btn" onclick="setPill('eq_type',this,'Repair / Replacement')">Repair / Replacement</button>
+                <button type="button" class="pill-btn" onclick="setPill('eq_type',this,'Other')">Other</button>
+              </div>
+              <input type="hidden" id="eq_type"/>
+            </div>
+
+            <div class="field span2">
+              <label>Describe What You Need <span class="req">*</span></label>
+              <textarea id="eq_items" rows="3" placeholder="Be as specific as you can — model, software name, version, what access you need, etc."></textarea>
+            </div>
+
+            <div class="field span2">
+              <label>This Request Is For</label>
+              <div class="pill-group">
+                <button type="button" class="pill-btn" onclick="setPill('eq_for',this,'Just me');hideInline('eq-for-name')">Just me</button>
+                <button type="button" class="pill-btn" onclick="setPill('eq_for',this,'My team');hideInline('eq-for-name')">My team</button>
+                <button type="button" class="pill-btn" onclick="setPill('eq_for',this,'Specific employee');showInline('eq-for-name')">Specific employee</button>
+                <div class="inline-sub" id="eq-for-name">
+                  <input type="text" id="eq_for_name" placeholder="Employee name"/>
+                </div>
+              </div>
+              <input type="hidden" id="eq_for"/>
+            </div>
+
+            <div class="field">
+              <label>Department</label>
+              <select id="eq_dept">
+                <option value="">— Select —</option>
+                <option>Administration</option><option>Brand Experience</option>
+                <option>Curing</option><option>Customer Care</option>
+                <option>Customer Service</option><option>Facilities and Maintenance</option>
+                <option>Finance</option><option>Human Resources</option>
+                <option>Information Technology</option><option>Inventory</option>
+                <option>Kitchen</option><option>Labeling</option>
+                <option>Marketing</option><option>Operations</option>
+                <option>Procurement</option><option>Production</option>
+                <option>Project Management</option><option>Quality Control</option>
+                <option>Research &amp; Development</option><option>Shipping</option>
+                <option>Social Media</option><option>Strategy</option>
+                <option>Wholesale</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label>Quantity</label>
+              <input type="number" id="eq_quantity" min="1" value="1"/>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ── Section 2: Business Case ── -->
+        <div class="form-section">
+          <div class="form-section-title">Business Case</div>
+          <div class="form-grid">
+
+            <div class="field span2">
+              <label>Business Justification <span class="req">*</span></label>
+              <textarea id="eq_justification" rows="3" placeholder="Why is this needed? What problem does it solve or what work does it enable?"></textarea>
+            </div>
+
+            <div class="field span2">
+              <label>Urgency</label>
+              <div class="pill-group">
+                <button type="button" class="pill-btn" onclick="setPill('eq_urgency',this,'Low — within a month')">Low</button>
+                <button type="button" class="pill-btn" onclick="setPill('eq_urgency',this,'Normal — within 2 weeks')">Normal</button>
+                <button type="button" class="pill-btn" onclick="setPill('eq_urgency',this,'High — within a week')">High</button>
+                <button type="button" class="pill-btn" onclick="setPill('eq_urgency',this,'Critical — ASAP')">Critical</button>
+              </div>
+              <input type="hidden" id="eq_urgency"/>
+            </div>
+
+            <div class="field span2">
+              <label>Notes <span class="field-note">(optional)</span></label>
+              <textarea id="eq_notes" rows="2" placeholder="Any additional context for IT"></textarea>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="form-footer">
+          <button class="card-action" id="submitBtn" onclick="submitForm()">Submit Request →</button>
+          <button class="clear-btn" onclick="window.location.href='../index.html'">Cancel</button>
+          <div id="formStatus" class="form-status"></div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp, getApps, getApp }                    from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+  import { getAuth, onAuthStateChanged, signOut }              from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+  import { getFirestore, collection, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+  var cfg = { apiKey:'AIzaSyD-mpyReAsJW3dUiWQhFlFeIvUYj_Iju-E', authDomain:'it-help-site.firebaseapp.com', databaseURL:'https://it-help-site-default-rtdb.firebaseio.com', projectId:'it-help-site', storageBucket:'it-help-site.firebasestorage.app', messagingSenderId:'742349139773', appId:'1:742349139773:web:3780ad352a9a7e00f55f54' };
+  var fbApp = getApps().length ? getApp() : initializeApp(cfg);
+  var auth  = getAuth(fbApp);
+  var db    = getFirestore(fbApp);
+
+  onAuthStateChanged(auth, function(user) {
+    if (!user || !user.email.endsWith('@rowecasaorganics.com')) {
+      signOut(auth).finally(function() { window.location.replace('../login.html'); });
+      return;
+    }
+    window._currentUser = user;
+    var el = document.getElementById('topbarUser');
+    if (el) el.textContent = user.email;
+  });
+
+  document.getElementById('authBtn')?.addEventListener('click', function() {
+    signOut(auth).then(function() { window.location.replace('../login.html'); });
+  });
+
+  window.submitForm = async function() {
+    var btn      = document.getElementById('submitBtn');
+    var statusEl = document.getElementById('formStatus');
+
+    var reqType = document.getElementById('eq_type').value;
+    var items   = document.getElementById('eq_items').value.trim();
+    var justif  = document.getElementById('eq_justification').value.trim();
+    var missing = [];
+    if (!reqType) missing.push('Request type');
+    if (!items)   missing.push('Description of what you need');
+    if (!justif)  missing.push('Business justification');
+    if (missing.length) {
+      statusEl.textContent = '⚠️ Please fill in: ' + missing.join(', ') + '.';
+      statusEl.className = 'form-status error'; return;
+    }
+
+    btn.textContent = 'Submitting…'; btn.disabled = true;
+    statusEl.className = 'form-status';
+
+    var forWhom     = document.getElementById('eq_for').value;
+    var forWhomName = document.getElementById('eq_for_name').value.trim();
+
+    var payload = {
+      request_type:    reqType,
+      items_requested: items,
+      quantity:        document.getElementById('eq_quantity').value || '1',
+      for_whom:        forWhom,
+      for_whom_name:   forWhom === 'Specific employee' ? forWhomName : '',
+      department:      document.getElementById('eq_dept').value,
+      justification:   justif,
+      urgency:         document.getElementById('eq_urgency').value,
+      notes:           document.getElementById('eq_notes').value.trim(),
+      submitted_by:    window._currentUser?.email || '',
+      submitted_at:    new Date().toISOString()
+    };
+
+    // Post to Google Sheet (fire-and-forget)
+    var endpoint = 'https://script.google.com/macros/s/AKfycbx9Dcp4Kvon1f6YHVoZV3KJGGRNi8jcv_VUzF03eNmVUujwXJBs-A9Y-hPu2g90GHAatw/exec';
+    fetch(endpoint, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) }).catch(function(e){ console.warn('Sheet post failed:', e); });
+
+    try {
+      await addDoc(collection(db, 'submissions'), {
+        title:       'IT Equipment & Software Request',
+        dept:        document.getElementById('eq_dept').value,
+        url:         'forms/equipment.html',
+        uid:         window._currentUser.uid,
+        userEmail:   window._currentUser.email,
+        submittedAt: serverTimestamp(),
+        formData:    payload
+      });
+      document.getElementById('formWrap').style.display = 'none';
+      document.getElementById('successScreen').classList.add('show');
+    } catch(e) {
+      console.error(e);
+      statusEl.textContent = '❌ Submission failed. Please try again or email itsupport@rowecasaorganics.com.';
+      statusEl.className = 'form-status error';
+      btn.textContent = 'Submit Request →'; btn.disabled = false;
+    }
+  };
+</script>
+
+<script>
+  function setPill(hiddenId, btn, val) {
+    btn.closest('.pill-group').querySelectorAll('.pill-btn').forEach(function(b) { b.classList.remove('selected'); });
+    btn.classList.add('selected');
+    document.getElementById(hiddenId).value = val;
+  }
+  function showInline(id) {
+    var el = document.getElementById(id);
+    if (el) el.classList.add('show');
+  }
+  function hideInline(id) {
+    var el = document.getElementById(id);
+    if (el) {
+      el.classList.remove('show');
+      var inp = el.querySelector('input');
+      if (inp) inp.value = '';
+    }
+  }
+</script>
+</body>
+</html>

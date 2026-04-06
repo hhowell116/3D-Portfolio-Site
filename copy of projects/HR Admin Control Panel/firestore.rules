@@ -1,0 +1,80 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isItAdmin() {
+      return request.auth != null && getUserRole() == 'it_admin';
+    }
+
+    function isAuthorizedRole() {
+      return request.auth != null && getUserRole() in ['it_admin', 'hr', 'csuite'];
+    }
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isRCODomain() {
+      return request.auth.token.email.matches('.*@rowecasaorganics[.]com$');
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read: if isAuthenticated() && isRCODomain();
+      // Users can create/update their own doc (for first sign-in bootstrap)
+      allow create, update: if isAuthenticated() && isRCODomain() && request.auth.uid == userId;
+      // IT admins can write any user doc (for role management)
+      allow write: if isItAdmin();
+    }
+
+    // Employees — public read (display app needs this for celebrations),
+    // authorized roles can write
+    match /employees/{employeeId} {
+      allow read: if true;
+      allow create, update: if isAuthorizedRole();
+      allow delete: if isItAdmin();
+    }
+
+    // Campaigns and entries
+    match /campaigns/{campaignId} {
+      allow read: if isAuthenticated() && isRCODomain();
+      allow create, update: if isAuthorizedRole();
+      allow delete: if isItAdmin();
+
+      match /entries/{entryId} {
+        allow read: if isAuthenticated() && isRCODomain();
+        allow create, update: if isAuthorizedRole();
+        allow delete: if isItAdmin();
+      }
+    }
+
+    // Display config — public read, authorized roles write
+    match /displayConfig/{configId} {
+      allow read: if true;
+      allow write: if isAuthorizedRole();
+    }
+
+    // Display content — public read, authorized roles write (synced client-side)
+    match /displayContent/{contentId} {
+      allow read: if true;
+      allow write: if isAuthorizedRole();
+    }
+
+    // Role permissions — public read (all roles need to check their own), IT admin writes
+    match /rolePermissions/{roleId} {
+      allow read: if true;
+      allow write: if isItAdmin();
+    }
+
+    // Photo submissions — anyone can create (public upload), authorized roles manage
+    match /photoSubmissions/{submissionId} {
+      allow read: if true;
+      allow create: if true;
+      allow update, delete: if isAuthorizedRole();
+    }
+  }
+}

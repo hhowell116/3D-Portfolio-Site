@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unfulfilled Orders - RCO</title>
+<link rel="stylesheet" href="../css/main.css">
+</head>
+<body class="page-unfulfilled">
+<div class="uf-container">
+  <div class="uf-header">
+    <h1>Unfulfilled Orders</h1>
+    <div class="uf-meta" id="lastUpdated">Loading...</div>
+    <button class="fullscreen-btn" id="fullscreenBtn" title="Fullscreen" aria-label="Fullscreen">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M9 4H4v5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 4h5v5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 20H4v-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 20h5v-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+  <div class="uf-content">
+    <div class="uf-column">
+      <div class="uf-col-title">Retail</div>
+      <div class="uf-table-wrap">
+        <table class="uf-table">
+          <thead><tr><th>Date</th><th>Unfulfilled</th><th>Partial</th><th>Units</th></tr></thead>
+          <tbody id="retailTable"></tbody>
+        </table>
+      </div>
+      <div class="uf-summary">
+        <div class="uf-summary-card"><div class="uf-summary-value" id="rTotalUF">--</div><div class="uf-summary-label">Total Unfulfilled</div></div>
+        <div class="uf-summary-card"><div class="uf-summary-value" id="rAvgSize">--</div><div class="uf-summary-label">Avg Order Size</div></div>
+        <div class="uf-summary-card"><div class="uf-summary-value" id="rTotalUnits">--</div><div class="uf-summary-label">Total Units</div></div>
+      </div>
+    </div>
+    <div class="uf-column uf-column-disabled">
+      <div class="uf-col-title">Wholesale</div>
+      <div class="uf-table-wrap">
+        <table class="uf-table">
+          <thead><tr><th>Date</th><th>Unfulfilled</th><th>Partial</th><th>Units</th></tr></thead>
+          <tbody id="wholesaleTable"><tr><td colspan="4" style="text-align:center;font-style:italic;color:#8d8173;">Awaiting wholesale API key</td></tr></tbody>
+        </table>
+      </div>
+      <div class="uf-summary">
+        <div class="uf-summary-card"><div class="uf-summary-value" id="wTotalUF">--</div><div class="uf-summary-label">Total Unfulfilled</div></div>
+        <div class="uf-summary-card"><div class="uf-summary-value" id="wAvgSize">--</div><div class="uf-summary-label">Avg Order Size</div></div>
+        <div class="uf-summary-card"><div class="uf-summary-value" id="wTotalUnits">--</div><div class="uf-summary-label">Total Units</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+const API_BASE = "https://rco-metrics.hayden-howell.workers.dev";
+async function load() {
+  try {
+    const res = await fetch(`${API_BASE}/unfulfilled`);
+    const d = await res.json();
+    const r = d.retail || {};
+    const tbody = document.getElementById('retailTable');
+    const rows = r.byDate || [];
+    tbody.innerHTML = rows.map(row => `
+      <tr>
+        <td>${row.date}</td>
+        <td>${row.unfulfilled}</td>
+        <td>${row.partial}</td>
+        <td>${row.units}</td>
+      </tr>
+    `).join('') || '<tr><td colspan="4" style="text-align:center;">No unfulfilled orders</td></tr>';
+    document.getElementById('rTotalUF').textContent = (r.totalUnfulfilled || 0).toLocaleString();
+    document.getElementById('rAvgSize').textContent = (r.avgOrderSize || 0).toFixed(1);
+    document.getElementById('rTotalUnits').textContent = (r.totalUnits || 0).toLocaleString();
+
+    // Wholesale
+    const w = d.wholesale || {};
+    if (w.totalUnfulfilled !== undefined) {
+      document.querySelector('.uf-column-disabled')?.classList.remove('uf-column-disabled');
+      const wRows = w.byDate || [];
+      document.getElementById('wholesaleTable').innerHTML = wRows.map(row => `
+        <tr>
+          <td>${row.date}</td>
+          <td>${row.unfulfilled}</td>
+          <td>${row.partial}</td>
+          <td>${row.units}</td>
+        </tr>
+      `).join('') || '<tr><td colspan="4" style="text-align:center;">No unfulfilled orders</td></tr>';
+      document.getElementById('wTotalUF').textContent = (w.totalUnfulfilled || 0).toLocaleString();
+      document.getElementById('wAvgSize').textContent = (w.avgOrderSize || 0).toFixed(1);
+      document.getElementById('wTotalUnits').textContent = (w.totalUnits || 0).toLocaleString();
+    }
+
+    document.getElementById('lastUpdated').textContent = 'Updated ' + new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  } catch(e) { console.error(e); }
+}
+load();
+setInterval(load, 10*60*1000);
+document.getElementById('fullscreenBtn')?.addEventListener('click', () => { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); });
+window.addEventListener('message', e => { if (e.data?.type === 'RCO_THEME') document.body.classList.toggle('dark', e.data.theme === 'dark'); });
+window.addEventListener('message', e => { if (e.data?.type === 'TV_VIEW_STATE') document.body.classList.toggle('tv-view-active', e.data.active); });
+</script>
+</body>
+</html>

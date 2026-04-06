@@ -1,0 +1,18 @@
+{
+  "projects": {
+    "default": "rco-hr-admin"
+  },
+  "targets": {
+    "rco-hr-admin": {
+      "hosting": {
+        "admin": [
+          "rco-hr-admin"
+        ],
+        "display": [
+          "rco-hr-display"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

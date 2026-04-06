@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ShipStation Monthly Orders Dashboard</title>
+  <link rel="stylesheet" href="../css/main.css">
+</head>
+
+<body class="page-orders">
+  <div class="container">
+    <header class="header">
+      <div class="header-bar">
+        <div class="header-left">
+          <select id="yearFilter">
+            <option value="all">All Years</option>
+          </select>
+          <button onclick="jumpToCurrentMonth()">Current Month</button>
+        </div>
+
+        <div class="header-center">
+          <h1>Orders Overview</h1>
+        </div>
+
+        <div class="header-right">
+          <div class="view-toggle">
+            <button class="view-btn" data-view="calendar" onclick="switchView('calendar')">Calendar</button>
+            <button class="view-btn active" data-view="chart" onclick="switchView('chart')">Chart</button>
+          </div>
+
+          <button class="fullscreen-btn" id="fullscreenBtn" title="Fullscreen" aria-label="Fullscreen">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M9 4H4v5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M15 4h5v5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M9 20H4v-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M15 20h5v-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div id="loading" class="loading">Loading data</div>
+    <div id="statsGrid" class="stats-grid" style="display: none;"></div>
+
+    <div id="calendarView" class="calendar-view">
+      <div id="calendarGrid" class="calendar-grid"></div>
+    </div>
+
+    <div id="chartView" class="chart-view">
+      <div class="chart-section">
+        <h2>Monthly Orders Trends</h2>
+        <div class="chart-wrapper">
+          <canvas id="ordersChart"></canvas>
+        </div>
+      </div>
+      <div id="chartStats" class="chart-stats-sidebar"></div>
+    </div>
+  </div>
+
+  <div id="detailModal" class="detail-modal" onclick="if(event.target===this)closeModal()">
+    <div class="detail-content">
+      <span class="close-modal" onclick="closeModal()">&times;</span>
+      <div id="modalContent"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const SHEET_ID = '1fuXYhSNqwFA7nB9k3Nqd_Epp1BV8ZYlTi9JRm98KtNU';
+
+    let allData = [];
+    let currentView = 'chart';
+    let chart = null;
+    const currentDate = new Date();
+    const currentMonth = currentDate.toLocaleString('default', { month: 'long' });
+    const currentYear = currentDate.getFullYear();
+
+    window.addEventListener('message', (event) => {
+      if (event.data?.type === 'TV_VIEW_STATE') {
+        document.body.classList.toggle('tv-view-active', event.data.active);
+      }
+    });
+
+    window.onload = function() {
+      loadData();
+    };
+
+    function loadData() {
+      document.getElementById('loading').style.display = 'block';
+
+      fetch('https://rco-metrics.hayden-howell.workers.dev/orders/overview')
+        .then(response => response.json())
+        .then(data => {
+          displayData(data);
+        })
+        .catch(error => {
+          handleError(error);
+        });
+    }
+
+    function displayData(data) {
+      document.getElementById('loading').style.display = 'none';
+      allData = data;
+
+      if (data.length === 0) {
+        document.getElementById('loading').innerHTML = `
+          <div class="error">
+            <h2>No Data Found</h2>
+            <p>Please run "Pull All Monthly Data" from your Google Sheet first.</p>
+          </div>
+        `;
+        document.getElementById('loading').style.display = 'block';
+        return;
+      }
+
+      populateYearFilter(data);
+      renderStats(data);
+      renderCalendar(data);
+      renderChart(data);
+
+      document.getElementById('statsGrid').style.display = 'grid';
+      switchView(currentView);
+    }
+
+    function populateYearFilter(data) {
+      const years = [...new Set(data.map(d => d.year))].sort((a, b) => b - a);
+      const select = document.getElementById('yearFilter');
+
+      select.innerHTML = '<option value="all">All Years</option>';
+      years.forEach(year => {
+        select.innerHTML += `<option value="${year}">${year}</option>`;
+      });
+
+      select.onchange = function() {
+        const year = this.value;
+        const filtered = year === 'all' ? allData : allData.filter(d => d.year == year);
+        renderStats(filtered);
+        renderCalendar(filtered);
+        renderChart(filtered);
+      };
+    }
+
+    function renderStats(data) {
+      const totalOrders = data.reduce((sum, d) => sum + (d.ordersPlaced || 0), 0);
+      const totalFulfilled = data.reduce((sum, d) => sum + (d.ordersFulfilled || 0), 0);
+      const totalItems = data.reduce((sum, d) => sum + (d.totalItems || 0), 0);
+      const avgFulfillment = totalOrders > 0 ? ((totalFulfilled / totalOrders) * 100).toFixed(1) : 0;
+
+      const statsHTML = `
+        <div class="stat-card">
+          <div class="stat-label">Total Orders</div>
+          <div class="stat-value">${totalOrders.toLocaleString()}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Orders Fulfilled</div>
+          <div class="stat-value">${totalFulfilled.toLocaleString()}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Items Shipped</div>
+          <div class="stat-value">${totalItems.toLocaleString()}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Fulfillment Rate</div>
+          <div class="stat-value">${avgFulfillment}%</div>
+        </div>
+      `;
+
+      document.getElementById('statsGrid').innerHTML = statsHTML;
+    }
+
+    function renderCalendar(data) {
+      const grid = document.getElementById('calendarGrid');
+      grid.innerHTML = '';
+
+      data.forEach(month => {
+        const isCurrentMonth = month.month === currentMonth && month.year === currentYear;
+
+        const card = document.createElement('div');
+        card.className = 'month-card' + (isCurrentMonth ? ' current-month' : '');
+        card.onclick = () => showMonthDetail(month);
+        card.id = `month-${month.month}-${month.year}`;
+
+        card.innerHTML = `
+          ${isCurrentMonth ? '<div class="month-badge">CURRENT</div>' : ''}
+          <div class="month-name">${month.month} ${month.year}</div>
+          <div class="month-info">
+            <div>${(month.ordersPlaced || 0).toLocaleString()} orders placed</div>
+            <div>${(month.ordersFulfilled || 0).toLocaleString()} fulfilled</div>
+            <div>${(month.totalItems || 0).toLocaleString()} items shipped</div>
+            <div>${(month.uniqueCustomers || 0).toLocaleString()} customers</div>
+          </div>
+        `;
+
+        grid.appendChild(card);
+      });
+    }
+
+    function renderChart(data) {
+      const ctx = document.getElementById('ordersChart').getContext('2d');
+      if (chart) chart.destroy();
+
+      const monthOrder = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+      const sorted = [...data].sort((a, b) => a.year - b.year || monthOrder.indexOf(a.month) - monthOrder.indexOf(b.month));
+
+      const labels = sorted.map(d => `${d.month} ${d.year}`);
+      const ordersData = sorted.map(d => d.ordersPlaced || 0);
+      const fulfilledData = sorted.map(d => d.ordersFulfilled || 0);
+
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Orders Placed',
+              data: ordersData,
+              borderColor: '#d2b48c',
+              backgroundColor: 'rgba(210, 180, 140, 0.1)',
+              tension: 0.4,
+              fill: true,
+              borderWidth: 3,
+              pointRadius: 4,
+              pointHoverRadius: 8,
+              pointBackgroundColor: '#d2b48c',
+              pointBorderColor: '#fff',
+              pointBorderWidth: 2
+            },
+            {
+              label: 'Orders Fulfilled',
+              data: fulfilledData,
+              borderColor: '#8b7355',
+              backgroundColor: 'rgba(139, 115, 85, 0.1)',
+              tension: 0.4,
+              fill: true,
+              borderWidth: 3,
+              pointRadius: 4,
+              pointHoverRadius: 8,
+              pointBackgroundColor: '#8b7355',
+              pointBorderColor: '#fff',
+              pointBorderWidth: 2
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: {
+                color: '#8b7355',
+                font: { size: 11 },
+                usePointStyle: true,
+                padding: 12,
+                boxWidth: 15
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                color: '#a0906f',
+                callback: function(value){ return value.toLocaleString(); }
+              },
+              grid: { color: 'rgba(210, 180, 140, 0.1)' }
+            },
+            x: {
+              ticks: { color: '#a0906f' },
+              grid: { color: 'rgba(210, 180, 140, 0.1)' }
+            }
+          }
+        }
+      });
+
+      const total = ordersData.reduce((a, b) => a + b, 0);
+      const avg = Math.round(total / ordersData.length);
+      const max = Math.max(...ordersData);
+
+      document.getElementById('chartStats').innerHTML = `
+        <div class="chart-stat-item">
+          <div class="chart-stat-label">Total</div>
+          <div class="chart-stat-value">${total.toLocaleString()}</div>
+        </div>
+        <div class="chart-stat-item">
+          <div class="chart-stat-label">Average</div>
+          <div class="chart-stat-value">${avg.toLocaleString()}</div>
+        </div>
+        <div class="chart-stat-item">
+          <div class="chart-stat-label">Peak</div>
+          <div class="chart-stat-value">${max.toLocaleString()}</div>
+        </div>
+      `;
+    }
+
+    function switchView(view) {
+      currentView = view;
+
+      document.querySelectorAll('.view-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.view === view);
+      });
+
+      const calView = document.getElementById('calendarView');
+      const chtView = document.getElementById('chartView');
+
+      if (view === 'calendar') {
+        calView.classList.add('active');
+        chtView.classList.remove('active');
+        chtView.style.display = 'none';
+        calView.style.display = '';
+      } else {
+        calView.classList.remove('active');
+        calView.style.display = 'none';
+        chtView.classList.add('active');
+        chtView.style.display = '';
+        if (chart) setTimeout(() => chart.resize(), 100);
+      }
+    }
+
+    function jumpToCurrentMonth() {
+      if (currentView !== 'calendar') switchView('calendar');
+
+      const yearFilter = document.getElementById('yearFilter');
+      if (yearFilter.value !== 'all' && yearFilter.value != currentYear) {
+        yearFilter.value = 'all';
+        renderStats(allData);
+        renderCalendar(allData);
+        renderChart(allData);
+      }
+
+      setTimeout(() => {
+        const currentCard = document.getElementById(`month-${currentMonth}-${currentYear}`);
+        if (currentCard) {
+          currentCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          currentCard.style.animation = 'pulse 0.5s ease-in-out';
+          setTimeout(() => currentCard.style.animation = '', 500);
+        }
+      }, 100);
+    }
+
+    function showMonthDetail(month) {
+      const modal = document.getElementById('detailModal');
+      const content = document.getElementById('modalContent');
+
+      const isCurrentMonth = month.month === currentMonth && month.year === currentYear;
+
+      content.innerHTML = `
+        <h2 class="modal-title">
+          ${month.month} ${month.year}
+          ${isCurrentMonth ? '<span class="modal-current-badge">CURRENT</span>' : ''}
+        </h2>
+        <div class="modal-stats-grid">
+          <div class="modal-stat-box">
+            <div class="modal-stat-label">Orders Placed</div>
+            <div class="modal-stat-value">${(month.ordersPlaced || 0).toLocaleString()}</div>
+          </div>
+          <div class="modal-stat-box">
+            <div class="modal-stat-label">Orders Fulfilled</div>
+            <div class="modal-stat-value">${(month.ordersFulfilled || 0).toLocaleString()}</div>
+          </div>
+          <div class="modal-stat-box">
+            <div class="modal-stat-label">Total Items</div>
+            <div class="modal-stat-value">${(month.totalItems || 0).toLocaleString()}</div>
+          </div>
+          <div class="modal-stat-box">
+            <div class="modal-stat-label">Unique Customers</div>
+            <div class="modal-stat-value">${(month.uniqueCustomers || 0).toLocaleString()}</div>
+          </div>
+        </div>
+        <div class="modal-stat-box modal-top-product">
+          <div class="modal-stat-label">Top Product</div>
+          <div class="modal-stat-value">${month.topProduct || 'N/A'}</div>
+        </div>
+      `;
+
+      modal.classList.add('active');
+    }
+
+    function closeModal() {
+      document.getElementById('detailModal').classList.remove('active');
+    }
+
+    function handleError(error) {
+      document.getElementById('loading').innerHTML = `
+        <div class="error">
+          <h2>Error Loading Data</h2>
+          <p>Unable to fetch orders overview data.</p>
+          <p class="error-hint">Error: ${error.message}</p>
+        </div>
+      `;
+      document.getElementById('loading').style.display = 'block';
+    }
+
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
+    fullscreenBtn.addEventListener('click', async () => {
+      try {
+        if (!document.fullscreenElement) {
+          await document.documentElement.requestFullscreen();
+        } else {
+          await document.exitFullscreen();
+        }
+      } catch (e) {
+        console.error('Fullscreen failed:', e);
+      }
+    });
+
+    document.addEventListener('fullscreenchange', () => {
+      fullscreenBtn.classList.toggle('exit', !!document.fullscreenElement);
+    });
+
+  </script>
+
+  <script>
+window.addEventListener('message', (event) => {
+  if (event.data?.type === 'RCO_THEME') {
+    document.body.classList.toggle('dark', event.data.theme === 'dark');
+  }
+});
+</script>
+  <script>
+window.addEventListener('message', (event) => {
+  if (event.data?.type === 'TV_VIEW_STATE') {
+    document.body.classList.toggle('tv-view-active', event.data.active);
+  }
+});
+</script>
+<script>
+window.addEventListener('message', (event) => {
+  const msg = event.data;
+
+  const isTvAction = msg?.type === 'TV_ACTION';
+  const isTvCommand = msg?.type === 'TV_COMMAND';
+  if (!isTvAction && !isTvCommand) return;
+
+  const payload = isTvAction ? msg : (msg.payload || {});
+  if (payload.target && payload.target !== 'orders') return;
+
+  const view = payload.view;
+  if (!view) return;
+
+  if (typeof switchView === 'function') {
+    switchView(view);
+  }
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel - RCO</title>
+<link rel="stylesheet" href="../css/main.css">
+<script src="../js/roles.js"></script>
+</head>
+<body class="page-admin">
+<div class="admin-container">
+
+  <div class="admin-header">
+    <div class="admin-badge">IT ADMINS EYES ONLY</div>
+    <h1>Admin Panel</h1>
+    <div class="admin-meta" id="adminMeta">Loading...</div>
+  </div>
+
+  <div class="admin-content">
+
+    <!-- Current Session (half width) -->
+    <div class="admin-section">
+      <div class="admin-section-title">Current Session</div>
+      <div class="admin-user-card">
+        <div class="admin-user-row">
+          <span class="admin-user-label">Logged in as</span>
+          <span class="admin-user-value" id="currentUser">--</span>
+        </div>
+        <div class="admin-user-row">
+          <span class="admin-user-label">Role</span>
+          <span class="admin-user-value admin-role-badge" id="currentRole">--</span>
+        </div>
+        <div class="admin-user-row">
+          <span class="admin-user-label">Access Level</span>
+          <span class="admin-user-value" id="currentAccess">--</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Read About This Site (half width) -->
+    <div class="admin-section admin-about-section">
+      <div class="admin-section-title">Read About This Site</div>
+      <p class="admin-about-desc">Learn how the dashboard works, where the data comes from, and what each tab does.</p>
+      <button class="admin-about-btn" id="openAboutModal">View Site Overview</button>
+    </div>
+
+    <!-- Recent Site Access + Currently Accessing — full width, split 50/50 -->
+    <div class="admin-section admin-full-width">
+      <div class="admin-access-row">
+        <div class="admin-access-col">
+          <div class="admin-section-title">Recent Site Access</div>
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead><tr><th>Email</th><th>Role</th><th>Last Seen</th></tr></thead>
+              <tbody id="accessLog"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="admin-access-col">
+          <div class="admin-section-title">Currently Accessing</div>
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead><tr><th>Email</th><th>Role</th><th>Active Since</th></tr></thead>
+              <tbody id="currentlyAccessing"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Role Permissions Matrix -->
+    <div class="admin-section admin-full-width">
+      <div class="admin-section-title">Role Permissions</div>
+      <div class="admin-table-wrap">
+        <table class="admin-table admin-permissions">
+          <thead>
+            <tr>
+              <th>Dashboard</th>
+              <th>IT Admin</th>
+              <th>C-Suite</th>
+              <th>Director</th>
+              <th>Supervisor</th>
+              <th>Employee</th>
+            </tr>
+          </thead>
+          <tbody id="permissionsTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- User Directory -->
+    <div class="admin-section admin-full-width">
+      <div class="admin-section-title">User Directory <span class="admin-info-icon" data-tooltip="Users are currently hard coded due to BambooHR API constraint">i</span></div>
+      <div class="admin-table-wrap admin-table-wrap-tall">
+        <table class="admin-table">
+          <thead><tr><th>Email</th><th>Role</th></tr></thead>
+          <tbody id="userDirectory"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- About Site Modal -->
+<div class="admin-modal-overlay" id="aboutModal">
+  <div class="admin-modal">
+    <button class="admin-modal-close" id="closeAboutModal">&times;</button>
+    <h2>RCO Metrics Dashboard — Overview</h2>
+
+    <div class="admin-modal-body">
+      <h3>What It Does</h3>
+      <p>The RCO Metrics Dashboard is an automated operational dashboard that replaces manual spreadsheet tracking. Instead of someone checking Shopify every day and typing in numbers, the dashboard pulls directly from both Shopify stores (Retail and Wholesale) and calculates everything automatically.</p>
+
+      <h3>How the Data Works</h3>
+      <ul>
+        <li><strong>Data Sources:</strong> All data is pulled using READ-ONLY API access to both the Retail (<em>rowe-casa</em>) and Wholesale (<em>wholesale-rowe-casa</em>) Shopify stores. Nothing on this dashboard can modify orders, products, or any store data.</li>
+        <li><strong>Backend:</strong> A Cloudflare Worker fetches and processes Shopify data from both stores, caching results in Cloudflare KV for instant page loads.</li>
+        <li><strong>Frontend:</strong> Hosted on Firebase with Google authentication restricted to @rowecasaorganics.com accounts.</li>
+        <li><strong>Authentication:</strong> The Cloudflare Worker handles automatic reauthentication of Shopify API tokens for both stores, so the connection never expires or requires manual intervention.</li>
+        <li><strong>Refresh:</strong> Historical data (KPI, orders, international, top products) refreshes automatically every 6 hours via a cron job. Live dashboards (daily metrics, sales, unfulfilled, skip the line) pull fresh data from Shopify on each page load.</li>
+        <li><strong>Historical Data:</strong> Complete retail and wholesale data going back to January 2024 through present.</li>
+      </ul>
+
+      <h3>Dashboard Tabs</h3>
+
+      <h4>Fulfillment KPI</h4>
+      <p>The main view. Shows daily order counts and fulfillment rates for 4-day and 7-day windows. The 4-day rate measures what percentage of orders ship within 4 business days (target: 85%). The 7-day rate is the same for 7 days (target: 95%). Toggle between Retail, Wholesale, and Total (combined). Switch between monthly table view and calendar heat map.</p>
+
+      <h4>Shipping Leaderboard</h4>
+      <p>Today's top shippers ranked by products shipped. Pulls from ShipStation via a Google Sheet that auto-refreshes throughout the day. Split into full-time, part-time, and wholesale categories.</p>
+
+      <h4>Daily Metrics</h4>
+      <p>Live snapshot of today's performance for both Retail and Wholesale side by side — total sales, order count, average order value, average revenue per unit, units sold, fulfillment progress, and top selling products.</p>
+
+      <h4>Sales</h4>
+      <p>Sales summary showing Today, Month-to-Date, and Year-to-Date revenue and orders for both Retail and Wholesale. Includes YTD combined totals (revenue, orders, AOV) at the bottom.</p>
+
+      <h4>Top Products</h4>
+      <p>Product rankings by units sold over the last 7 and 30 days, combining both Retail and Wholesale data.</p>
+
+      <h4>Orders Overview</h4>
+      <p>Monthly summary cards showing combined retail + wholesale totals: orders placed, fulfilled, unique customers, and top products. Toggle between Calendar card view and Chart trend view. Click any month for detailed stats. Helps identify seasonal patterns — Valentine's Day, Mother's Day, Black Friday, etc.</p>
+
+      <h4>Unfulfilled Orders</h4>
+      <p>Current unfulfilled and partially fulfilled orders grouped by date, with average order size. Shows Retail and Wholesale separately.</p>
+
+      <h4>International Orders</h4>
+      <p>World map and US state map showing where orders come from across both stores. Filter by year and see country/state breakdowns with counts, percentages, and weighted averages.</p>
+
+      <h4>Skip the Line</h4>
+      <p>Tracks orders tagged with the "Skip the Line" priority fulfillment service — shows how many are open, unfulfilled, and partially fulfilled with a date breakdown.</p>
+
+      <h3>Site Features</h3>
+      <ul>
+        <li><strong>Dark Mode:</strong> Toggle between light and dark themes. Preference is saved.</li>
+        <li><strong>TV Mode:</strong> Enters fullscreen and automatically cycles through all dashboards — ideal for wall-mounted displays.</li>
+        <li><strong>Guided Tour:</strong> Click the <strong>?</strong> button in the sidebar to walk through each dashboard with explanations. Automatically shown for first-time users.</li>
+        <li><strong>Deep Linking:</strong> Each dashboard has a unique URL (e.g. <em>#sales</em>, <em>#international</em>) so you can share direct links to specific dashboards.</li>
+        <li><strong>Responsive:</strong> Dashboards scale for different screen sizes and zoom levels.</li>
+      </ul>
+
+      <h3>Admin Panel (IT Admins Only)</h3>
+      <ul>
+        <li><strong>Currently Accessing:</strong> Real-time view of who has the site open right now.</li>
+        <li><strong>Recent Site Access:</strong> Log of recent visitors across all users.</li>
+
+        <li><strong>Role Permissions:</strong> Matrix showing which dashboards each role can access.</li>
+        <li><strong>User Directory:</strong> All users grouped by role.</li>
+      </ul>
+
+      <h3>Access Control</h3>
+      <p>The site uses role-based access. IT Admins have full access including the admin panel. C-Suite, Directors, and Supervisors can see all operational dashboards. Employees can see the Shipping Leaderboard and International Orders.</p>
+
+      <h3>A Note on Order Counts</h3>
+      <p>Daily order counts may be slightly lower (by about 2–10 orders) than Shopify's Analytics reports. This is a documented difference — Shopify Analytics includes pending/in-progress orders while the API returns finalized transactions. Fulfillment rates are not affected by this difference.</p>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+import { getDatabase, ref, set, get, onValue, onDisconnect, push } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDEn7ooJJ1zATM5oEnx3ByDiOFTFxr_JiA",
+  authDomain: "rco-metrics-d0f3b.firebaseapp.com",
+  projectId: "rco-metrics-d0f3b",
+  storageBucket: "rco-metrics-d0f3b.firebasestorage.app",
+  messagingSenderId: "1021645263850",
+  appId: "1:1021645263850:web:dfd5c7cd0bd99762679893",
+  databaseURL: "https://rco-metrics-d0f3b-default-rtdb.firebaseio.com",
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) return;
+
+  const email = user.email;
+  const role = RCO_ROLES.getRole(email);
+
+  // Show current user info
+  document.getElementById('currentUser').textContent = email;
+  document.getElementById('currentRole').textContent = role;
+  document.getElementById('currentRole').classList.add('role-' + role.toLowerCase().replace(/[^a-z]/g, '-'));
+  document.getElementById('currentAccess').textContent = RCO_ROLES.roles[role]?.description || 'Standard access';
+  document.getElementById('adminMeta').textContent = new Date().toLocaleString('en-US', {
+    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit'
+  });
+
+  // Firebase Realtime Database
+  const db = getDatabase(app);
+  window._fbAdmin = { getDatabase, ref, set, get };
+  const emailKey = email.replace(/[.@]/g, '_');
+
+  // Presence — set on load, auto-remove on disconnect
+  const presenceRef = ref(db, `presence/${emailKey}`);
+  set(presenceRef, { email, role, since: new Date().toISOString() });
+  onDisconnect(presenceRef).remove();
+
+  // Access log — one write per visit
+  set(ref(db, `accessLog/${emailKey}`), { email, role, time: new Date().toISOString() });
+
+  // Listen for access log (real-time)
+  onValue(ref(db, 'accessLog'), (snapshot) => {
+    const logBody = document.getElementById('accessLog');
+    const entries = [];
+    snapshot.forEach(child => { const v = child.val(); if (v?.email) entries.push(v); });
+    entries.sort((a, b) => new Date(b.time) - new Date(a.time));
+    logBody.innerHTML = entries.map(entry => `
+      <tr>
+        <td>${entry.email}</td>
+        <td><span class="admin-role-tag role-${(entry.role||'Employee').toLowerCase().replace(/[^a-z]/g, '-')}">${entry.role || 'Employee'}</span></td>
+        <td>${new Date(entry.time).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</td>
+      </tr>
+    `).join('');
+  });
+
+  // Listen for currently accessing (real-time — no polling needed!)
+  onValue(ref(db, 'presence'), (snapshot) => {
+    const caBody = document.getElementById('currentlyAccessing');
+    const users = [];
+    snapshot.forEach(child => { const v = child.val(); if (v?.email) users.push(v); });
+    if (!users.length) {
+      caBody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#8d8173;">No active users</td></tr>';
+    } else {
+      caBody.innerHTML = users.map(u => `
+        <tr>
+          <td>${u.email}</td>
+          <td><span class="admin-role-tag role-${(u.role||'Employee').toLowerCase().replace(/[^a-z]/g, '-')}">${u.role || 'Employee'}</span></td>
+          <td>${u.since ? new Date(u.since).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '--'}</td>
+        </tr>
+      `).join('');
+    }
+  });
+
+  // Build permissions matrix
+  const dashboards = [
+    { id: 'fulfillment', name: 'Fulfillment KPI' },
+    { id: 'shipping', name: 'Shipping Leaderboards' },
+    { id: 'orders', name: 'Orders Overview' },
+    { id: 'international', name: 'International Orders' },
+    { id: 'daily-metrics', name: 'Daily Metrics' },
+    { id: 'sales', name: 'Sales' },
+    { id: 'top-products', name: 'Top Products' },
+    { id: 'unfulfilled', name: 'Unfulfilled Orders' },
+    { id: 'fulfillment-dashboard', name: 'Fulfillment Dashboard' },
+    { id: 'skip-the-line', name: 'Skip the Line' },
+    { id: 'admin', name: 'Admin Panel' },
+  ];
+
+  const roleNames = ['IT Admin', 'C-Suite', 'Director', 'Supervisor', 'Employee'];
+
+  // Load saved permissions from Firebase (override defaults)
+  const permSnap = await get(ref(db, 'permissions'));
+  if (permSnap.exists()) {
+    const saved = permSnap.val();
+    for (const [roleName, config] of Object.entries(saved)) {
+      if (RCO_ROLES.roles[roleName]) {
+        if (config.dashboards) RCO_ROLES.roles[roleName].dashboards = config.dashboards;
+        if (config.canSeeRevenue !== undefined) RCO_ROLES.roles[roleName].canSeeRevenue = config.canSeeRevenue;
+      }
+    }
+  } else {
+    // First time: seed Firebase with defaults from roles.js
+    const defaults = {};
+    for (const [name, config] of Object.entries(RCO_ROLES.roles)) {
+      defaults[name] = { dashboards: config.dashboards, canSeeRevenue: config.canSeeRevenue };
+    }
+    set(ref(db, 'permissions'), defaults);
+  }
+
+  // Render permissions table
+  const permBody = document.getElementById('permissionsTable');
+  permBody.innerHTML = dashboards.map(d => {
+    const cells = roleNames.map(r => {
+      const config = RCO_ROLES.roles[r];
+      const has = config.dashboards.includes('all') || config.dashboards.includes(d.id);
+      const checked = has ? 'checked' : '';
+      return `<td><label class="perm-toggle"><input type="checkbox" ${checked} data-role="${r}" data-dash="${d.id}" class="perm-checkbox"><span class="perm-slider"></span></label></td>`;
+    }).join('');
+    return `<tr><td class="perm-dashboard">${d.name}</td>${cells}</tr>`;
+  }).join('');
+
+  // Wire up toggle handlers (inside module scope so Firebase is accessible)
+  document.querySelectorAll('.perm-checkbox').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const role = cb.dataset.role;
+      const dash = cb.dataset.dash;
+      const config = RCO_ROLES.roles[role];
+      if (!config || role === 'IT Admin') { cb.checked = true; return; }
+      if (cb.checked) {
+        if (!config.dashboards.includes(dash)) config.dashboards.push(dash);
+      } else {
+        config.dashboards = config.dashboards.filter(d => d !== dash);
+      }
+      set(ref(db, `permissions/${role}/dashboards`), config.dashboards);
+    });
+  });
+
+  // Load dashboard usage data
+  // Build user directory
+  const dirBody = document.getElementById('userDirectory');
+  const byRole = {};
+  for (const [em, rl] of Object.entries(RCO_ROLES.users)) {
+    if (!byRole[rl]) byRole[rl] = [];
+    byRole[rl].push(em);
+  }
+
+  let dirHTML = '';
+  for (const roleName of roleNames) {
+    const users = byRole[roleName] || [];
+    if (users.length === 0) continue;
+    dirHTML += `<tr class="admin-role-header"><td colspan="2">${roleName} (${users.length})</td></tr>`;
+    for (const em of users.sort()) {
+      dirHTML += `<tr><td>${em}</td><td><span class="admin-role-tag role-${roleName.toLowerCase().replace(/[^a-z]/g, '-')}">${roleName}</span></td></tr>`;
+    }
+  }
+  dirBody.innerHTML = dirHTML;
+});
+</script>
+
+<script>
+window.addEventListener('message', e => { if (e.data?.type === 'RCO_THEME') document.body.classList.toggle('dark', e.data.theme === 'dark'); });
+window.addEventListener('message', e => { if (e.data?.type === 'TV_VIEW_STATE') document.body.classList.toggle('tv-view-active', e.data.active); });
+
+// About modal
+document.getElementById('openAboutModal').addEventListener('click', () => {
+  document.getElementById('aboutModal').classList.add('active');
+});
+document.getElementById('closeAboutModal').addEventListener('click', () => {
+  document.getElementById('aboutModal').classList.remove('active');
+});
+document.getElementById('aboutModal').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) e.currentTarget.classList.remove('active');
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RCO Metrics Dashboard</title>
+
+<link rel="stylesheet" href="css/main.css">
+</head>
+
+<body>
+<div class="app-shell">
+
+  <aside class="sidebar">
+
+    <div class="sidebar-header">
+      <img src="Assets/logo.png" class="sidebar-logo" alt="Rowe Casa Organics">
+
+      <div class="sidebar-title-box">
+        <div class="sidebar-title">RCO Metrics</div>
+        <div class="sidebar-subtitle">Operational Dashboards</div>
+      </div>
+    </div>
+
+    <div class="sidebar-nav">
+      <button class="nav-btn active" data-tab="fulfillment">Fulfillment KPI</button>
+      <button class="nav-btn" data-tab="shipping">Shipping Leaderboards</button>
+      <button class="nav-btn" data-tab="orders">Orders Overview</button>
+      <button class="nav-btn" data-tab="international">International Orders</button>
+      <button class="nav-btn" data-tab="daily-metrics">Daily Metrics</button>
+      <button class="nav-btn" data-tab="sales">Sales</button>
+      <button class="nav-btn" data-tab="top-products">Top Products</button>
+      <button class="nav-btn" data-tab="unfulfilled">Unfulfilled Orders</button>
+      <button class="nav-btn" data-tab="fulfillment-dashboard">Fulfillment</button>
+      <button class="nav-btn" data-tab="skip-the-line">Skip the Line</button>
+    </div>
+
+    <div class="sidebar-footer">
+
+      <div class="orders-widget">
+        <div class="orders-label">TODAY'S ORDERS</div>
+        <div class="orders-value" id="orderCount">--</div>
+        <div class="orders-updated" id="orderUpdated">Last updated:<br>Loading...</div>
+      </div>
+
+      <div class="sidebar-separator"></div>
+      <button class="nav-btn nav-btn-admin" data-tab="admin" id="adminBtn">Admin Panel</button>
+      <div class="sidebar-separator"></div>
+
+      <div class="footer-mini-row">
+        <button class="icon-btn" id="themeToggleBtn" type="button" aria-label="Toggle Dark Mode" title="Toggle Dark Mode"></button>
+
+        <button class="icon-btn wt-help-btn" id="helpBtn" type="button" aria-label="Site Tour" title="Take a guided tour">?</button>
+
+        <button
+          class="icon-btn"
+          id="tvModeBtn"
+          type="button"
+          aria-label="TV Mode"
+          title="TV Mode - Auto rotate through dashboards"
+        >
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <rect x="3.5" y="6.5" width="17" height="11" rx="2" stroke="currentColor" stroke-width="2"/>
+            <line x1="8" y1="20" x2="16" y2="20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <line x1="10" y1="4" x2="7" y2="1.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <line x1="14" y1="4" x2="17" y2="1.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+
+      <button class="sign-out-btn" onclick="signOutUser()">Sign Out</button>
+    </div>
+
+  </aside>
+
+  <main class="content-area">
+    <div id="fulfillment-frame" class="iframe-wrapper active">
+      <iframe src="html/fulfillment.html"></iframe>
+    </div>
+    <div id="shipping-frame" class="iframe-wrapper">
+      <iframe src="html/shipping.html"></iframe>
+    </div>
+    <div id="orders-frame" class="iframe-wrapper">
+      <iframe src="html/orders.html"></iframe>
+    </div>
+    <div id="international-frame" class="iframe-wrapper">
+      <iframe src="html/international.html"></iframe>
+    </div>
+    <div id="daily-metrics-frame" class="iframe-wrapper">
+      <iframe src="html/daily-metrics.html"></iframe>
+    </div>
+    <div id="sales-frame" class="iframe-wrapper">
+      <iframe src="html/sales.html"></iframe>
+    </div>
+    <div id="top-products-frame" class="iframe-wrapper">
+      <iframe src="html/top-products.html"></iframe>
+    </div>
+    <div id="unfulfilled-frame" class="iframe-wrapper">
+      <iframe src="html/unfulfilled.html"></iframe>
+    </div>
+    <div id="fulfillment-dashboard-frame" class="iframe-wrapper">
+      <iframe src="html/fulfillment-dashboard.html"></iframe>
+    </div>
+    <div id="skip-the-line-frame" class="iframe-wrapper">
+      <iframe src="html/skip-the-line.html"></iframe>
+    </div>
+    <div id="admin-frame" class="iframe-wrapper">
+      <iframe src="html/admin.html"></iframe>
+    </div>
+  </main>
+
+</div>
+
+<div class="tv-transition" id="tvTransition" aria-hidden="true"></div>
+
+<script>
+function setActiveTab(tab){
+  document.querySelectorAll('.nav-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.tab === tab);
+  });
+
+  document.querySelectorAll('.iframe-wrapper').forEach(f => {
+    f.classList.remove('active');
+    f.style.display = 'none';
+  });
+
+  const frame = document.getElementById(`${tab}-frame`);
+  if (frame){
+    frame.classList.add('active');
+    frame.style.display = 'block';
+  }
+}
+
+// Dashboard view time tracking
+let _trackingTab = 'fulfillment';
+let _trackingStart = Date.now();
+let _trackingEmail = null;
+
+function flushViewTime() {
+  if (!_trackingEmail || !_trackingTab) return;
+  const seconds = Math.round((Date.now() - _trackingStart) / 1000);
+  if (seconds < 2) return;
+  // Use Firebase Realtime Database
+  try {
+    const dbRef = window._firebaseDb;
+    if (!dbRef) return;
+    const emailKey = _trackingEmail.replace(/[.@]/g, '_');
+    window._fbPush(window._fbRef(dbRef, 'viewTime/deltas'), { email: _trackingEmail, tab: _trackingTab, seconds, ts: Date.now() });
+  } catch(e) {}
+}
+
+// Flush on tab switch, page hide, and periodically
+document.addEventListener('visibilitychange', () => { if (document.hidden) flushViewTime(); });
+window.addEventListener('beforeunload', flushViewTime);
+setInterval(flushViewTime, 300000); // flush every 5 min for long views
+
+document.querySelectorAll('.nav-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    flushViewTime();
+    const tab = btn.dataset.tab;
+    _trackingTab = tab;
+    _trackingStart = Date.now();
+    setActiveTab(tab);
+    history.replaceState(null, '', `#${tab}`);
+
+    if (typeof broadcastThemeToIframes === 'function' && typeof getSavedTheme === 'function') {
+      broadcastThemeToIframes(getSavedTheme());
+    }
+  });
+});
+
+// Load tab from URL hash on page load
+const hashTab = window.location.hash.replace('#', '');
+if (hashTab && document.querySelector(`.nav-btn[data-tab="${hashTab}"]`)) {
+  setActiveTab(hashTab);
+  _trackingTab = hashTab;
+  _trackingStart = Date.now();
+}
+</script>
+
+
+<script>
+async function updateOrderCount() {
+  try {
+    const res = await fetch('https://rco-metrics.hayden-howell.workers.dev/daily-metrics');
+    const data = await res.json();
+    const retail = data.retail || {};
+    const wholesale = data.wholesale || {};
+    const totalOrders = (retail.totalOrders || 0) + (wholesale.totalOrders || 0);
+
+    document.getElementById('orderCount').textContent = totalOrders.toLocaleString();
+
+    const now = new Date();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const year = String(now.getFullYear()).slice(-2);
+    const hours = now.getHours();
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const displayHours = hours % 12 || 12;
+    document.getElementById('orderUpdated').innerHTML = `Last updated:<br>${month}/${day}/${year} ${displayHours}:${minutes} ${ampm}`;
+  } catch (e) {
+    console.error('Order count error:', e);
+    document.getElementById('orderCount').textContent = '—';
+    document.getElementById('orderUpdated').innerHTML = 'Last updated:<br>Error';
+  }
+}
+
+updateOrderCount();
+setInterval(updateOrderCount, 600000); // every 10 min
+</script>
+
+<script>
+const THEME_KEY = 'rco_theme';
+const themeBtn = document.getElementById('themeToggleBtn');
+
+function moonIcon(){
+  return `
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M21 14.5A8.5 8.5 0 0 1 9.5 3a7 7 0 1 0 11.5 11.5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+    </svg>`;
+}
+function sunIcon(){
+  return `
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12Z" stroke="currentColor" stroke-width="2"/>
+      <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </svg>`;
+}
+
+function getSavedTheme(){
+  return localStorage.getItem(THEME_KEY) || 'light';
+}
+
+function broadcastThemeToIframes(theme){
+  document.querySelectorAll('iframe').forEach(f => {
+    try { f.contentWindow.postMessage({ type: 'RCO_THEME', theme }, '*'); } catch(e) {}
+  });
+}
+
+function broadcastTvStateToIframes(active){
+  document.querySelectorAll('iframe').forEach(f => {
+    try { f.contentWindow.postMessage({ type: 'TV_VIEW_STATE', active }, '*'); } catch(e) {}
+  });
+}
+
+function setTheme(theme){
+  const isDark = theme === 'dark';
+  document.body.classList.toggle('dark', isDark);
+  localStorage.setItem(THEME_KEY, theme);
+
+  if (themeBtn){
+    themeBtn.innerHTML = isDark ? sunIcon() : moonIcon();
+  }
+  broadcastThemeToIframes(theme);
+}
+
+if (themeBtn){
+  themeBtn.addEventListener('click', () => {
+    const cur = getSavedTheme();
+    setTheme(cur === 'dark' ? 'light' : 'dark');
+  });
+}
+
+setTheme(getSavedTheme());
+
+document.querySelectorAll('iframe').forEach(f => {
+  f.addEventListener('load', () => broadcastThemeToIframes(getSavedTheme()));
+});
+</script>
+
+<script>
+const tvBtn = document.getElementById('tvModeBtn');
+const tvTransition = document.getElementById('tvTransition');
+
+let tvEnabled = false;
+let tvTimeout = null;
+let tvIndex = 0;
+const TV_STEP_MS = 8000;
+
+function postToTab(tab, message){
+  const frameWrap = document.getElementById(`${tab}-frame`);
+  const iframe = frameWrap?.querySelector('iframe');
+  if (!iframe?.contentWindow) return;
+  try { iframe.contentWindow.postMessage(message, '*'); } catch(e) {}
+}
+
+function withTvFade(workFn, holdMs = 320){
+  if (!tvTransition) { workFn(); return; }
+
+  tvTransition.classList.add('show');
+  setTimeout(() => { try { workFn(); } catch(e) {} }, 90);
+  setTimeout(() => tvTransition.classList.remove('show'), holdMs);
+}
+
+const TV_PLAYLIST = [
+  { tab: 'fulfillment', command: { type:'TV_ACTION', target:'fulfillment', dataset:'retail', view:'monthly' } },
+  { tab: 'fulfillment', command: { type:'TV_ACTION', target:'fulfillment', dataset:'retail', view:'calendar' } },
+  { tab: 'fulfillment', command: { type:'TV_ACTION', target:'fulfillment', dataset:'wholesale', view:'monthly' } },
+  { tab: 'fulfillment', command: { type:'TV_ACTION', target:'fulfillment', dataset:'wholesale', view:'calendar' } },
+
+  { tab: 'shipping' },
+
+  { tab: 'daily-metrics' },
+
+  { tab: 'sales' },
+
+  { tab: 'top-products' },
+
+  { tab: 'orders', command: { type:'TV_ACTION', target:'orders', view:'calendar' } },
+  { tab: 'orders', command: { type:'TV_ACTION', target:'orders', view:'chart' } },
+
+  { tab: 'unfulfilled' },
+
+  { tab: 'international', command: { type:'TV_ACTION', target:'international', view:'world' } },
+  { tab: 'international', command: { type:'TV_ACTION', target:'international', view:'us' } },
+
+  { tab: 'skip-the-line' },
+
+  { tab: 'fulfillment', command: { type:'TV_ACTION', target:'fulfillment', dataset:'retail', view:'monthly' } },
+];
+
+function scheduleNext(){
+  clearTimeout(tvTimeout);
+  tvTimeout = setTimeout(() => {
+    tvIndex = (tvIndex + 1) % filteredPlaylist.length;
+    runTvStep(tvIndex);
+    scheduleNext();
+  }, TV_STEP_MS);
+}
+
+// Filter playlist by role access
+let filteredPlaylist = TV_PLAYLIST;
+function filterTvPlaylist(email) {
+  if (typeof RCO_ROLES !== 'undefined' && email) {
+    filteredPlaylist = TV_PLAYLIST.filter(step => RCO_ROLES.canAccess(email, step.tab));
+  }
+}
+
+function runTvStep(i){
+  const step = filteredPlaylist[i % filteredPlaylist.length];
+
+  withTvFade(() => {
+    setActiveTab(step.tab);
+    broadcastThemeToIframes(getSavedTheme());
+
+    if (step.command){
+      setTimeout(() => postToTab(step.tab, step.command), 60);
+    }
+  }, 340);
+}
+
+async function enterTvMode(){
+  tvEnabled = true;
+  tvBtn?.classList.add('active');
+  document.body.classList.add('tv-mode');
+  broadcastTvStateToIframes(true);
+  if (window._authEmail) filterTvPlaylist(window._authEmail);
+
+  try{
+    if (!document.fullscreenElement){
+      await document.documentElement.requestFullscreen();
+    }
+  } catch(e){
+    console.error('Fullscreen failed:', e);
+  }
+
+  tvIndex = 0;
+  runTvStep(tvIndex);
+  scheduleNext();
+}
+
+async function exitTvMode(){
+  tvEnabled = false;
+  tvBtn?.classList.remove('active');
+  clearTimeout(tvTimeout);
+  tvTimeout = null;
+  document.body.classList.remove('tv-mode');
+  broadcastTvStateToIframes(false);
+
+  try{
+    if (document.fullscreenElement){
+      await document.exitFullscreen();
+    }
+  } catch(e){
+    console.error('Exit fullscreen failed:', e);
+  }
+}
+
+if (tvBtn){
+  tvBtn.addEventListener('click', () => {
+    if (!tvEnabled) enterTvMode();
+    else exitTvMode();
+  });
+}
+
+document.addEventListener('fullscreenchange', () => {
+  if (!document.fullscreenElement && tvEnabled){
+    tvEnabled = false;
+    tvBtn?.classList.remove('active');
+    clearTimeout(tvTimeout);
+    tvTimeout = null;
+    document.body.classList.remove('tv-mode');
+    broadcastTvStateToIframes(false);
+  }
+});
+</script>
+<script src="js/roles.js"></script>
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+import { getDatabase, ref, set, get, push, onDisconnect, remove, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDEn7ooJJ1zATM5oEnx3ByDiOFTFxr_JiA",
+  authDomain: "rco-metrics-d0f3b.firebaseapp.com",
+  projectId: "rco-metrics-d0f3b",
+  storageBucket: "rco-metrics-d0f3b.firebasestorage.app",
+  messagingSenderId: "1021645263850",
+  appId: "1:1021645263850:web:dfd5c7cd0bd99762679893",
+  measurementId: "G-DR5MLDL5BG",
+  databaseURL: "https://rco-metrics-d0f3b-default-rtdb.firebaseio.com"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    window.location.replace('html/login.html');
+  } else {
+    const email = user.email;
+    const allowedDomain = '@rowecasaorganics.com';
+
+    if (!email.endsWith(allowedDomain)) {
+      alert('Access denied. Only @rowecasaorganics.com accounts are allowed.');
+      signOut(auth).then(() => {
+        window.location.replace('html/login.html');
+      });
+      return;
+    }
+
+    // Load permissions from Firebase (override roles.js defaults)
+    try {
+      const db = getDatabase(app);
+      const permSnap = await get(ref(db, 'permissions'));
+      if (permSnap.exists()) {
+        const saved = permSnap.val();
+        for (const [roleName, config] of Object.entries(saved)) {
+          if (RCO_ROLES.roles[roleName]) {
+            if (config.dashboards) RCO_ROLES.roles[roleName].dashboards = config.dashboards;
+            if (config.canSeeRevenue !== undefined) RCO_ROLES.roles[roleName].canSeeRevenue = config.canSeeRevenue;
+          }
+        }
+      }
+    } catch(e) { /* use defaults */ }
+
+    // Show/hide dashboard tabs based on role permissions (including admin)
+    if (typeof RCO_ROLES !== 'undefined') {
+      document.querySelectorAll('.nav-btn[data-tab]').forEach(btn => {
+        const tab = btn.dataset.tab;
+        btn.style.display = RCO_ROLES.canAccess(email, tab) ? 'block' : 'none';
+      });
+      document.querySelector('.sidebar-nav')?.classList.add('loaded');
+    }
+
+    // Set tracking email for view time
+    _trackingEmail = email;
+    window._authEmail = email;
+
+    // Broadcast revenue permission to all iframes
+    const role = typeof RCO_ROLES !== 'undefined' ? RCO_ROLES.getRole(email) : 'Employee';
+    const canSeeRevenue = typeof RCO_ROLES !== 'undefined' ? RCO_ROLES.canSeeRevenue(email) : false;
+    document.querySelectorAll('iframe').forEach(iframe => {
+      iframe.addEventListener('load', () => {
+        iframe.contentWindow.postMessage({ type: 'RCO_REVENUE_ACCESS', canSeeRevenue }, '*');
+      });
+      if (iframe.contentWindow) {
+        iframe.contentWindow.postMessage({ type: 'RCO_REVENUE_ACCESS', canSeeRevenue }, '*');
+      }
+    });
+
+    // Firebase Realtime Database for presence + access log
+    const db = getDatabase(app);
+    window._firebaseDb = db;
+    window._fbRef = ref;
+    window._fbPush = push;
+    const emailKey = email.replace(/[.@]/g, '_');
+
+    // Presence — auto-removed on disconnect
+    const presenceRef = ref(db, `presence/${emailKey}`);
+    set(presenceRef, { email, role, since: new Date().toISOString() });
+    onDisconnect(presenceRef).remove();
+
+    // Access log — one write per visit
+    const logRef = ref(db, `accessLog/${emailKey}`);
+    set(logRef, { email, role, time: new Date().toISOString() });
+
+    // Show walkthrough for first-time users
+    if (typeof shouldShowWalkthrough === 'function' && shouldShowWalkthrough()) {
+      setTimeout(() => startWalkthrough(email), 500);
+    }
+  }
+});
+
+window.signOutUser = async function() {
+  try {
+    await signOut(auth);
+    window.location.replace('html/login.html');
+  } catch (error) {
+    console.error('Sign out error:', error);
+    alert('Failed to sign out. Please try again.');
+  }
+};
+</script>
+
+<!-- Walkthrough Overlay -->
+<div id="walkthroughOverlay" class="wt-overlay" style="display:none;">
+  <div class="wt-backdrop"></div>
+  <div class="wt-tooltip" id="wtTooltip">
+    <div class="wt-step-count" id="wtStepCount"></div>
+    <h3 class="wt-title" id="wtTitle"></h3>
+    <p class="wt-desc" id="wtDesc"></p>
+    <div class="wt-actions">
+      <button class="wt-btn wt-btn-skip" id="wtSkip">Skip Tour</button>
+      <div>
+        <button class="wt-btn wt-btn-back" id="wtBack" style="display:none;">Back</button>
+        <button class="wt-btn wt-btn-next" id="wtNext">Next</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const ALL_STEPS = [
+    {
+      target: '.sidebar',
+      title: 'Navigation Sidebar',
+      desc: 'This is your main menu. Click any tab to switch between dashboards. The sidebar also shows today\'s live order count at the bottom.',
+      position: 'right',
+    },
+    {
+      target: '[data-tab="fulfillment"]',
+      title: 'Fulfillment KPI',
+      desc: 'Tracks daily order counts and fulfillment rates — how many orders ship within 4 or 7 days. Switch between Retail, Wholesale, and Total. View as a monthly table or calendar heat map.',
+      tab: 'fulfillment',
+      position: 'right',
+    },
+    {
+      target: '[data-tab="shipping"]',
+      title: 'Shipping Leaderboards',
+      desc: 'Today\'s top shippers ranked by products shipped, pulled from ShipStation. Split into Full-Time, Part-Time, and Wholesale categories.',
+      tab: 'shipping',
+      position: 'right',
+    },
+    {
+      target: '[data-tab="daily-metrics"]',
+      title: 'Daily Metrics',
+      desc: 'Live snapshot of today\'s performance — sales, orders, AOV, units sold, fulfillment progress, and top selling products. Shows both Retail and Wholesale side by side.',
+      tab: 'daily-metrics',
+      position: 'right',
+    },
+    {
+      target: '[data-tab="sales"]',
+      title: 'Sales Dashboard',
+      desc: 'Sales summary showing Today, Month-to-Date, and Year-to-Date revenue and orders for both Retail and Wholesale, plus YTD combined totals at the bottom.',
+      tab: 'sales',
+      position: 'right',
+    },
+    {
+      target: '[data-tab="top-products"]',
+      title: 'Top Products',
+      desc: 'Product rankings by units sold over the last 7 and 30 days, combining Retail and Wholesale data.',
+      tab: 'top-products',
+      position: 'right',
+    },
+    {
+      target: '[data-tab="orders"]',
+      title: 'Orders Overview',
+      desc: 'Monthly summary cards showing total orders, fulfillment rates, unique customers, and top products. Toggle between Calendar card view and Chart trend view.',
+      tab: 'orders',
+      position: 'right',
+    },
+    {
+      target: '[data-tab="unfulfilled"]',
+      title: 'Unfulfilled Orders',
+      desc: 'Current unfulfilled and partially fulfilled orders grouped by date, with average order size. Shows Retail and Wholesale separately.',
+      tab: 'unfulfilled',
+      position: 'right',
+    },
+    {
+      target: '[data-tab="international"]',
+      title: 'International Orders',
+      desc: 'World map and US state map showing where orders come from. Filter by year and see country/state breakdowns with counts and percentages.',
+      tab: 'international',
+      position: 'right',
+    },
+    {
+      target: '[data-tab="skip-the-line"]',
+      title: 'Skip the Line',
+      desc: 'Tracks priority "Skip the Line" orders — shows how many are open, unfulfilled, and partially fulfilled with a date breakdown.',
+      tab: 'skip-the-line',
+      position: 'right',
+    },
+    {
+      target: '[data-tab="admin"]',
+      title: 'Admin Panel',
+      desc: 'IT Admin only. Shows who\'s accessing the site, role permissions matrix, dashboard usage analytics, user directory, and a full site overview.',
+      tab: 'admin',
+      role: 'admin',
+      position: 'right',
+    },
+    {
+      target: '#themeToggleBtn',
+      title: 'Dark Mode',
+      desc: 'Toggle between light and dark themes. Your preference is saved.',
+      position: 'top',
+    },
+    {
+      target: '#tvModeBtn',
+      title: 'TV Mode',
+      desc: 'Enters fullscreen and automatically cycles through all dashboards — perfect for a wall-mounted display.',
+      position: 'top',
+    },
+    {
+      target: '#orderCount',
+      title: 'Today\'s Orders',
+      desc: 'Live count of today\'s total orders (Retail + Wholesale) pulled directly from Shopify. Updates every 5 minutes.',
+      position: 'top',
+    },
+  ];
+
+  let steps = [];
+  let currentStep = 0;
+
+  function initWalkthrough(email) {
+    const isAdmin = typeof RCO_ROLES !== 'undefined' && RCO_ROLES.isAdmin(email);
+
+    // Filter steps based on role — only show tabs the user can see
+    steps = ALL_STEPS.filter(s => {
+      if (s.role === 'admin' && !isAdmin) return false;
+      if (s.tab && typeof RCO_ROLES !== 'undefined' && !RCO_ROLES.canAccess(email, s.tab)) return false;
+      return true;
+    });
+  }
+
+  function showStep(idx) {
+    const step = steps[idx];
+    if (!step) return endTour();
+
+    const el = document.querySelector(step.target);
+
+    // Switch to the dashboard tab if needed
+    if (step.tab) setActiveTab(step.tab);
+
+    document.getElementById('wtStepCount').textContent = `Step ${idx + 1} of ${steps.length}`;
+    document.getElementById('wtTitle').textContent = step.title;
+    document.getElementById('wtDesc').textContent = step.desc;
+    document.getElementById('wtBack').style.display = idx > 0 ? '' : 'none';
+    document.getElementById('wtNext').textContent = idx === steps.length - 1 ? 'Finish' : 'Next';
+
+    // Position tooltip near the target
+    const tooltip = document.getElementById('wtTooltip');
+    tooltip.className = 'wt-tooltip';
+
+    if (el) {
+      const rect = el.getBoundingClientRect();
+      tooltip.style.position = 'fixed';
+
+      if (step.position === 'right') {
+        tooltip.style.left = (rect.right + 16) + 'px';
+        const top = Math.max(10, Math.min(rect.top, window.innerHeight - 280));
+        tooltip.style.top = top + 'px';
+        tooltip.style.transform = 'none';
+      } else if (step.position === 'top') {
+        tooltip.style.left = rect.left + 'px';
+        tooltip.style.top = (rect.top - 10) + 'px';
+        tooltip.style.transform = 'translateY(-100%)';
+      } else {
+        tooltip.style.left = '50%';
+        tooltip.style.top = '50%';
+        tooltip.style.transform = 'translate(-50%, -50%)';
+      }
+
+      // Highlight element
+      el.classList.add('wt-highlight');
+      document.querySelectorAll('.wt-highlight').forEach(e => {
+        if (e !== el) e.classList.remove('wt-highlight');
+      });
+    } else {
+      tooltip.style.left = '50%';
+      tooltip.style.top = '50%';
+      tooltip.style.transform = 'translate(-50%, -50%)';
+    }
+  }
+
+  function endTour() {
+    document.getElementById('walkthroughOverlay').style.display = 'none';
+    document.querySelectorAll('.wt-highlight').forEach(e => e.classList.remove('wt-highlight'));
+    localStorage.setItem('rco_walkthrough_done', 'true');
+    setActiveTab('fulfillment');
+    history.replaceState(null, '', '#fulfillment');
+  }
+
+  document.getElementById('wtNext').addEventListener('click', () => {
+    currentStep++;
+    if (currentStep >= steps.length) endTour();
+    else showStep(currentStep);
+  });
+
+  document.getElementById('wtBack').addEventListener('click', () => {
+    if (currentStep > 0) { currentStep--; showStep(currentStep); }
+  });
+
+  document.getElementById('wtSkip').addEventListener('click', endTour);
+
+  // Expose so auth callback can trigger it
+  window.startWalkthrough = function(email) {
+    initWalkthrough(email);
+    currentStep = 0;
+    document.getElementById('walkthroughOverlay').style.display = 'block';
+    showStep(0);
+  };
+
+  window.shouldShowWalkthrough = function() {
+    return !localStorage.getItem('rco_walkthrough_done');
+  };
+
+  // Help button to restart tour
+  document.getElementById('helpBtn')?.addEventListener('click', () => {
+    if (window._authEmail) startWalkthrough(window._authEmail);
+  });
+})();
+</script>
+
+</body>
+</html>

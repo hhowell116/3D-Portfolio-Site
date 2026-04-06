@@ -1,0 +1,11 @@
+# Secrets - never commit
+.env
+functions/.env
+scripts/.env
+
+# Firebase
+firebase-debug.log
+.firebase/
+
+# Node
+node_modules/

@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RCO Fulfillment Dashboard</title>
+
+<link rel="stylesheet" href="../css/main.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+
+</head>
+
+<body class="page-fulfillment">
+
+<div class="dashboard-container">
+
+  <div class="dashboard-header">
+    <div class="header-left">
+      <select id="yearSelect"></select>
+      <select id="monthSelect"></select>
+    </div>
+
+    <div class="header-title">
+      RCO Fulfillment KPI
+      <span id="datasetLabel" style="font-size:0.6em;color:#8d8173;">- Retail</span>
+    </div>
+
+    <div class="header-controls">
+      <button class="view-btn active" data-view="monthly" id="monthlyBtn">Monthly</button>
+      <button class="view-btn" data-view="calendar" id="calendarBtn">Calendar</button>
+
+      <select id="datasetSelect" class="view-btn">
+        <option value="retail">Retail</option>
+        <option value="wholesale">Wholesale</option>
+        <option value="total">Total</option>
+      </select>
+
+      <button class="fullscreen-btn" id="fullscreenBtn" title="Fullscreen" aria-label="Fullscreen">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M9 4H4v5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M15 4h5v5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M9 20H4v-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M15 20h5v-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi-card">
+      <div class="kpi-label">4-Day Fill Rate</div>
+      <div class="kpi-value" id="fillRate4Day">-</div>
+      <div class="kpi-subtitle">Target: 85%</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">7-Day Fill Rate</div>
+      <div class="kpi-value" id="fillRate7Day">-</div>
+      <div class="kpi-subtitle">Target: 95%</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Total Orders</div>
+      <div class="kpi-value" id="totalOrders">-</div>
+      <div class="kpi-subtitle">This <span id="periodLabel">month</span></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Avg Daily Orders</div>
+      <div class="kpi-value" id="avgOrders">-</div>
+      <div class="kpi-subtitle">Per day</div>
+    </div>
+  </div>
+
+  <div class="content-grid monthly-view" id="monthlyView" data-view="monthly">
+    <div class="chart-card table-section">
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Orders</th>
+              <th>Rem 4D</th>
+              <th>Rem 7D</th>
+              <th>Rate 4D</th>
+              <th>Rate 7D</th>
+            </tr>
+          </thead>
+          <tbody id="dataTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="chart-card fill-rate-section">
+      <div class="chart-title">Daily Fill Rate Performance</div>
+      <div class="chart-subtitle">Target lines: 95% (7-day) / 85% (4-day)</div>
+      <div class="chart-wrapper">
+        <canvas id="fillRateChart"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-card orders-section">
+      <div class="chart-title">Orders Remaining</div>
+      <div class="chart-wrapper">
+        <canvas id="ordersChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="calendar-view" id="calendarView" data-view="calendar">
+    <div id="calendarGrid" class="calendar-grid"></div>
+  </div>
+
+  <div id="tooltip" class="tooltip"></div>
+
+</div>
+
+<script src="../js/data.js"></script>
+<script src="../js/wholesale.js"></script>
+<script src="../js/fulfillment.js"></script>
+
+<script>
+const fsBtn = document.getElementById('fullscreenBtn');
+
+if (fsBtn) {
+  fsBtn.addEventListener('click', async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      } else {
+        await document.exitFullscreen();
+      }
+    } catch (e) {
+      console.error('Fullscreen failed:', e);
+    }
+  });
+
+  document.addEventListener('fullscreenchange', () => {
+    if (document.fullscreenElement) fsBtn.classList.add('exit');
+    else fsBtn.classList.remove('exit');
+  });
+}
+</script>
+
+<script>
+window.addEventListener('message', (event) => {
+  if (event.data?.type === 'RCO_THEME') {
+    document.body.classList.toggle('dark', event.data.theme === 'dark');
+  }
+});
+</script>
+
+<script>
+window.addEventListener('message', (event) => {
+  if (event.data?.type === 'TV_VIEW_STATE') {
+    document.body.classList.toggle('tv-view-active', !!event.data.active);
+  }
+});
+
+window.addEventListener('message', (event) => {
+  const msg = event.data;
+
+  const isTvAction = msg?.type === 'TV_ACTION';
+  const isTvCommand = msg?.type === 'TV_COMMAND';
+  if (!isTvAction && !isTvCommand) return;
+
+  const payload = isTvAction ? msg : (msg.payload || {});
+  if (payload.target && payload.target !== 'fulfillment') return;
+
+  if (payload.dataset) {
+    const ds = String(payload.dataset).toLowerCase();
+    const select = document.getElementById('datasetSelect');
+    if (select && ['retail','wholesale','total'].includes(ds)) {
+      select.value = ds;
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  }
+
+  if (payload.view) {
+    const monthlyBtn = document.getElementById('monthlyBtn');
+    const calendarBtn = document.getElementById('calendarBtn');
+
+    if (payload.view === 'monthly' && monthlyBtn && !monthlyBtn.classList.contains('active')) {
+      monthlyBtn.click();
+    }
+    if (payload.view === 'calendar' && calendarBtn && !calendarBtn.classList.contains('active')) {
+      calendarBtn.click();
+    }
+  }
+});
+</script>
+
+</body>
+</html>

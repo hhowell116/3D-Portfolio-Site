@@ -1,0 +1,216 @@
+/* ═══════════════════════════════════════════════════════
+   Celebrations Board — TV/Landscape Layout
+   Left: Monthly calendar with event markers
+   Right: Birthday & anniversary cards
+   ═══════════════════════════════════════════════════════ */
+
+.cb-root {
+  width: 100vw; height: 100vh; overflow: hidden;
+  display: flex; flex-direction: column;
+  background: linear-gradient(160deg, #f9f6f2 0%, #f4efe8 50%, #ebe5dc 100%);
+  font-family: "Avenir Next", Avenir, "Segoe UI", system-ui, sans-serif;
+  color: #25282a;
+}
+
+/* ── Top Bar ─────────────────────────────────── */
+.cb-topbar {
+  display: flex; align-items: center; gap: 2vw;
+  padding: 1.5vh 3vw;
+  background: linear-gradient(90deg, #5f4b3c, #473C31);
+  box-shadow: 0 2px 12px rgba(95,75,60,0.2);
+}
+.cb-logo { height: clamp(36px, 5vh, 60px); width: auto; opacity: 0.9; }
+.cb-title-area { flex: 1; }
+.cb-month {
+  font-family: 'Noto Serif', Georgia, serif;
+  font-size: clamp(22px, 3vw, 44px); font-weight: 700;
+  color: #fff; line-height: 1.1;
+}
+.cb-subtitle {
+  font-size: clamp(11px, 1.2vw, 18px); color: #bd9979;
+  letter-spacing: 2px; text-transform: uppercase; font-weight: 600;
+}
+
+/* ── Body ────────────────────────────────────── */
+.cb-body {
+  flex: 1; display: flex; overflow: hidden;
+}
+
+/* ── Calendar Side (Left) ────────────────────── */
+.cb-calendar-side {
+  width: 48%; padding: 2vh 2vw;
+  display: flex; flex-direction: column;
+  border-right: 1px solid #E8E4DF;
+}
+
+.cb-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  flex: 1;
+}
+
+.cb-cal-header {
+  text-align: center; font-weight: 700;
+  font-size: clamp(10px, 1vw, 16px);
+  color: #5f4b3c; padding: 0.5vh 0;
+  text-transform: uppercase; letter-spacing: 1px;
+}
+
+.cb-cal-cell {
+  background: #fff;
+  border-radius: 6px;
+  padding: clamp(2px, 0.4vh, 6px) clamp(3px, 0.3vw, 8px);
+  display: flex; flex-direction: column;
+  min-height: clamp(40px, 8vh, 80px);
+  position: relative;
+  border: 2px solid transparent;
+  transition: all 0.2s;
+}
+.cb-cal-empty { background: transparent; }
+
+.cb-cal-today {
+  border-color: #d4a04a;
+  background: #fffbf0;
+  box-shadow: 0 0 0 1px #d4a04a33;
+}
+
+.cb-cal-has-event {
+  background: #faf8f5;
+}
+
+.cb-cal-num {
+  font-size: clamp(11px, 1.1vw, 18px); font-weight: 700;
+  color: #473C31; line-height: 1;
+}
+.cb-cal-today .cb-cal-num { color: #d4a04a; }
+
+.cb-cal-dots {
+  display: flex; gap: 2px; margin-top: 2px;
+  font-size: clamp(10px, 0.9vw, 16px); line-height: 1;
+}
+
+.cb-cal-names {
+  display: flex; flex-direction: column; gap: 1px;
+  margin-top: auto;
+  overflow: hidden;
+}
+.cb-cal-name {
+  font-size: clamp(7px, 0.65vw, 11px);
+  line-height: 1.2;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-weight: 600;
+}
+.cb-name-bday { color: #C4721C; }
+.cb-name-anniv { color: #5f4b3c; }
+
+.cb-legend {
+  display: flex; gap: 2vw; padding: 1vh 0 0;
+  justify-content: center;
+}
+.cb-legend-item {
+  font-size: clamp(10px, 0.9vw, 14px); color: #5f4b3c;
+  display: flex; align-items: center; gap: 0.3vw;
+}
+
+/* ── Lists Side (Right) ──────────────────────── */
+.cb-lists-side {
+  width: 52%; padding: 2vh 2.5vw;
+  overflow-y: auto;
+  display: flex; flex-direction: column; gap: 2vh;
+}
+
+/* Scrollbar styling */
+.cb-lists-side::-webkit-scrollbar { width: 4px; }
+.cb-lists-side::-webkit-scrollbar-track { background: transparent; }
+.cb-lists-side::-webkit-scrollbar-thumb { background: #d7d1ca; border-radius: 4px; }
+
+.cb-section { }
+
+.cb-section-title {
+  font-family: 'Noto Serif', Georgia, serif;
+  font-size: clamp(16px, 2vw, 30px); font-weight: 700;
+  margin-bottom: 1.5vh;
+  display: flex; align-items: center; gap: 0.5vw;
+}
+.cb-section-bday { color: #C4721C; }
+.cb-section-anniv { color: #5f4b3c; }
+
+.cb-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(clamp(160px, 14vw, 240px), 1fr));
+  gap: clamp(6px, 0.8vh, 12px);
+}
+
+.cb-card {
+  display: flex; align-items: center; gap: clamp(6px, 0.6vw, 12px);
+  padding: clamp(6px, 0.8vh, 14px) clamp(8px, 0.8vw, 14px);
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid #E8E4DF;
+  transition: transform 0.2s;
+}
+.cb-card-bday { border-left: 3px solid #d4a04a; }
+.cb-card-anniv { border-left: 3px solid #C4721C; }
+
+.cb-card-photo {
+  width: clamp(32px, 3.5vw, 52px); height: clamp(32px, 3.5vw, 52px);
+  border-radius: 50%; object-fit: cover; flex-shrink: 0;
+  border: 2px solid #f4efe8;
+}
+
+.cb-card-initials {
+  width: clamp(32px, 3.5vw, 52px); height: clamp(32px, 3.5vw, 52px);
+  border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: clamp(11px, 1.1vw, 16px);
+}
+.cb-initials-bday { background: #fef3e2; color: #C4721C; }
+.cb-initials-anniv { background: #f4efe8; color: #5f4b3c; }
+
+.cb-card-info { min-width: 0; }
+.cb-card-name {
+  font-weight: 700; color: #473C31;
+  font-size: clamp(11px, 1vw, 16px); line-height: 1.2;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cb-card-detail {
+  font-size: clamp(9px, 0.8vw, 13px); color: #bd9979;
+}
+.cb-card-years {
+  font-size: clamp(9px, 0.85vw, 14px); color: #C4721C; font-weight: 600;
+}
+.cb-card-dept {
+  font-size: clamp(8px, 0.7vw, 11px); color: #a3a3a3;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.cb-empty {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  color: #bd9979; font-size: clamp(14px, 1.5vw, 24px);
+}
+
+/* ── Idle Screen ─────────────────────────────── */
+.cb-idle {
+  width: 100vw; height: 100vh;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: linear-gradient(160deg, #f9f6f2 0%, #ebe5dc 50%, #d7d1ca 100%);
+}
+.cb-idle img { width: clamp(200px, 30vw, 500px); opacity: 0.6; margin-bottom: 3vh; }
+.cb-idle p { color: #5f4b3c; font-size: clamp(18px, 2vw, 32px); opacity: 0.5; }
+
+/* ── Responsive: Portrait ────────────────────── */
+@media (max-aspect-ratio: 1/1) {
+  .cb-body { flex-direction: column; }
+  .cb-calendar-side { width: 100%; height: 50%; border-right: none; border-bottom: 1px solid #E8E4DF; }
+  .cb-lists-side { width: 100%; height: 50%; }
+}
+
+/* ── Auto-scroll for long lists ──────────────── */
+@keyframes cb-scroll {
+  0% { transform: translateY(0); }
+  45% { transform: translateY(0); }
+  50% { transform: translateY(calc(-100% + 100vh - 20vh)); }
+  95% { transform: translateY(calc(-100% + 100vh - 20vh)); }
+  100% { transform: translateY(0); }
+}

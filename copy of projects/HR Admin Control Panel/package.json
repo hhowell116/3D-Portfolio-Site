@@ -1,0 +1,24 @@
+{
+  "name": "rco-hr-recognition",
+  "private": true,
+  "workspaces": [
+    "packages/shared",
+    "packages/admin",
+    "packages/display"
+  ],
+  "scripts": {
+    "dev:admin": "npm run dev --workspace=packages/admin",
+    "dev:display": "npm run dev --workspace=packages/display",
+    "build:admin": "npm run build --workspace=packages/admin",
+    "build:display": "npm run build --workspace=packages/display",
+    "build:functions": "cd functions && npm run build",
+    "build:all": "npm run build:admin && npm run build:display && npm run build:functions",
+    "deploy": "firebase deploy",
+    "deploy:hosting": "firebase deploy --only hosting",
+    "deploy:functions": "firebase deploy --only functions",
+    "deploy:rules": "firebase deploy --only firestore:rules,storage"
+  },
+  "devDependencies": {
+    "@napi-rs/canvas": "^0.1.97"
+  }
+}
