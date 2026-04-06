@@ -47,17 +47,10 @@ const About = () => {
         variants={fadeIn("", "", 0.1, 1)}
         className='mt-4 text-secondary text-[17px] max-w-3xl leading-[30px]'
       >
-        I'm an IT Specialist and Computer Science graduate from Texas A&M University-Texarkana
-        with hands-on experience in ERP implementations, systems administration,
-        and building data-driven web applications. I specialize in bridging the gap
-        between IT infrastructure and business operations — from deploying real-time
-        analytics dashboards on production floors to managing enterprise-wide technology
-        migrations. I leverage AI extensively in my workflow, including prompt engineering,
-        Claude Code CLI for AI-assisted development, and orchestrating multi-agent systems
-        with Paperclip to automate research, development, and documentation pipelines.
-        Skilled in data visualization, API integration, ETL workflows, and turning raw
-        operational data into actionable business insights. I'm a quick learner who
-        thrives on solving complex problems and delivering solutions that make a real impact.
+        IT Specialist and Computer Science graduate from Texas A&M University-Texarkana.
+        I build data-driven web applications and manage IT infrastructure, from real-time
+        production dashboards to enterprise system migrations. Focused on full-stack
+        development, data visualization, and turning operational data into business insights.
       </motion.p>
 
       <div className='mt-20 flex flex-wrap gap-10'>
