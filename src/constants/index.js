@@ -237,7 +237,7 @@ const projects = [
     image: starbucks,
     source_code_link: "https://github.com/hhowell116/RCO-Metrics",
     videoUrl: "",
-    liveDemo: "",
+    liveDemo: "https://hhowell116.github.io/Live-RCO-Metrics-Dashboard/",
   },
   {
     name: "IT Help Portal",
@@ -257,7 +257,7 @@ const projects = [
     image: tesla,
     source_code_link: "https://github.com/hhowell116/IT-Help-Site",
     videoUrl: "",
-    liveDemo: "",
+    liveDemo: "https://hhowell116.github.io/Live-RCO-Help-Site/",
   },
   {
     name: "ShipStation Leaderboard",
@@ -318,7 +318,7 @@ const projects = [
     image: starbucks,
     source_code_link: "https://rco-hr-admin.web.app/",
     videoUrl: "",
-    liveDemo: "",
+    liveDemo: "https://hhowell116.github.io/Live-HR-Admin-Control-Panel/",
   },
   {
     name: "Mileage Tracker",
@@ -338,7 +338,7 @@ const projects = [
     image: tesla,
     source_code_link: "https://github.com/hhowell116/Mileage-Tracker",
     videoUrl: "",
-    liveDemo: "",
+    liveDemo: "https://hhowell116.github.io/Live-Mileage-Tracker/",
   },
   {
     name: "3D Portfolio Site",
@@ -356,7 +356,7 @@ const projects = [
       "Framer Motion", "Tailwind CSS 3", "FormSubmit.co", "Firebase Hosting",
     ],
     image: meta,
-    source_code_link: "https://github.com/hhowell116",
+    source_code_link: "https://github.com/hhowell116/3D-Portfolio-Site",
     videoUrl: "",
     liveDemo: "",
   },
